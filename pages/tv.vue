@@ -16,6 +16,13 @@ const tv = ref(null)
 const seasonList = ref([])
 const seasonData = ref(null)
 const posterJPG = ref('')
+const landscapeImage = ref('')
+
+const poster = computed(() =>
+  tv.value?.poster_path
+    ? 'https://image.tmdb.org/t/p/original' + tv.value.poster_path
+    : 'https://via.placeholder.com/150x210?text=No+Image'
+)
 
 const selectedSeason = ref(null)
 const selectedEpisode = ref(null)
@@ -122,34 +129,10 @@ watch(selectedSeason, async (s) => {
       data.episodes?.at(-1)?.episode_number || 1
   }
 })
-async function convertPosterToJPG() {
-  if (!tv.value?.poster_path) return
 
-  const src =
-    'https://image.tmdb.org/t/p/w500' + tv.value.poster_path
-
-  const img = new Image()
-  img.crossOrigin = 'anonymous'
-  img.src = src
-
-  img.onload = () => {
-    const canvas = document.createElement('canvas')
-    canvas.width = img.width
-    canvas.height = img.height
-
-    const ctx = canvas.getContext('2d')
-    ctx.drawImage(img, 0, 0)
-
-    canvas.toBlob(
-      (blob) => {
-        posterJPG.value = URL.createObjectURL(blob)
-      },
-      'image/jpeg',
-      0.95
-    )
-  }
-}
-
+watch(tv, (v) => {
+  if (v) convertPosterToJPG()
+})
 
 /* =====================
    SAVE STATE
@@ -318,12 +301,56 @@ function copy(text) {
    RANDOM IMAGE
 ===================== */
 function pickRandomImage () {
-  if (!allImages.value.length) return
-  const r = allImages.value[Math.floor(Math.random() * allImages.value.length)]
-  mainImage.value = `https://image.tmdb.org/t/p/w780${r.file_path}`
+  // GUARD LEVEL 1
+  if (!Array.isArray(allImages.value)) return
+
+  // GUARD LEVEL 2
+  if (allImages.value.length === 0) return
+
+  const index = Math.floor(Math.random() * allImages.value.length)
+  const r = allImages.value[index]
+
+  // GUARD LEVEL 3
+  if (!r || !r.file_path) return
+
+  const original =
+    'https://image.tmdb.org/t/p/original' + r.file_path
+
+  // PAKSA JPG (ANTI WEBP, DRAG AMAN)
+  landscapeImage.value =
+    'https://wsrv.nl/?url=' +
+    encodeURIComponent(original) +
+    '&format=jpg&n=-1&q=90'
 }
 
 watch(tv, v => v && pickRandomImage(), { immediate: true })
+async function convertPosterToJPG() {
+  if (!tv.value?.poster_path) return
+
+  const img = new Image()
+  img.crossOrigin = 'anonymous'
+  img.src = poster.value
+
+  img.onload = () => {
+    const canvas = document.createElement('canvas')
+    canvas.width = img.width
+    canvas.height = img.height
+
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    ctx.drawImage(img, 0, 0)
+
+    canvas.toBlob(
+      (blob) => {
+        if (blob) posterJPG.value = URL.createObjectURL(blob)
+      },
+      'image/jpeg',
+      0.95
+    )
+  }
+}
+
 </script>
 
 
@@ -331,7 +358,14 @@ watch(tv, v => v && pickRandomImage(), { immediate: true })
   <div class="page" v-if="tv">
     <div class="card">
 
-      <img v-if="mainImage" class="poster" :src="mainImage" />
+<img
+  v-if="landscapeImage"
+  class="poster"
+  :src="landscapeImage"
+  draggable="true"
+/>
+
+
 
       <div class="row">
         <select v-model="selectedSeason">
