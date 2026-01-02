@@ -15,6 +15,7 @@ const DOMAIN = 'https://www.justplay-tv.online'
 const tv = ref(null)
 const seasonList = ref([])
 const seasonData = ref(null)
+const posterJPG = ref('')
 
 const selectedSeason = ref(null)
 const selectedEpisode = ref(null)
@@ -45,6 +46,22 @@ if (tvId) {
 
   tv.value = data.value
   seasonList.value = data.value.seasons || []
+}
+function formatMonthYear(date) {
+  if (!date) return ''
+  return new Date(date).toLocaleDateString('en-US', {
+    month: 'short',
+    year: 'numeric'
+  })
+}
+
+function formatFullDate(date) {
+  if (!date) return ''
+  return new Date(date).toLocaleDateString('en-US', {
+    month: 'short',
+    day: '2-digit',
+    year: 'numeric'
+  })
 }
 
 /* =====================
@@ -105,6 +122,34 @@ watch(selectedSeason, async (s) => {
       data.episodes?.at(-1)?.episode_number || 1
   }
 })
+async function convertPosterToJPG() {
+  if (!tv.value?.poster_path) return
+
+  const src =
+    'https://image.tmdb.org/t/p/w500' + tv.value.poster_path
+
+  const img = new Image()
+  img.crossOrigin = 'anonymous'
+  img.src = src
+
+  img.onload = () => {
+    const canvas = document.createElement('canvas')
+    canvas.width = img.width
+    canvas.height = img.height
+
+    const ctx = canvas.getContext('2d')
+    ctx.drawImage(img, 0, 0)
+
+    canvas.toBlob(
+      (blob) => {
+        posterJPG.value = URL.createObjectURL(blob)
+      },
+      'image/jpeg',
+      0.95
+    )
+  }
+}
+
 
 /* =====================
    SAVE STATE
@@ -292,6 +337,9 @@ watch(tv, v => v && pickRandomImage(), { immediate: true })
         <select v-model="selectedSeason">
           <option v-for="s in seasonList" :key="s.id" :value="s.season_number">
             Season {{ s.season_number }}
+              <span v-if="s.air_date">
+    ({{ formatMonthYear(s.air_date) }})
+  </span>
           </option>
         </select>
 
@@ -302,6 +350,9 @@ watch(tv, v => v && pickRandomImage(), { immediate: true })
             :value="e.episode_number"
           >
             Episode {{ e.episode_number }}
+            <span v-if="e.air_date">
+    ({{ formatFullDate(e.air_date) }})
+  </span>
           </option>
         </select>
       </div>

@@ -1,1 +1,1 @@
-export { default } from "file:///C:/Users/AsSaLamuaLaikuM/Downloads/justplay-desc-generator-FULL/node_modules/@nuxt/vite-builder/dist/runtime/client.manifest.mjs"
+export { default } from "file:///C:/Users/AsSaLamuaLaikuM/deskripsi/node_modules/@nuxt/vite-builder/dist/runtime/client.manifest.mjs"

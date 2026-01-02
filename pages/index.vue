@@ -1,18 +1,15 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 
 const config = useRuntimeConfig()
 
 /* =====================
-   SEARCH STATE
+   SEARCH
 ===================== */
 const searchQuery = ref('')
 const searchResults = ref([])
 const isSearching = ref(false)
 
-/* =====================
-   SEARCH WATCH
-===================== */
 watch(searchQuery, async (q) => {
   if (!q || q.length < 2) {
     searchResults.value = []
@@ -20,113 +17,182 @@ watch(searchQuery, async (q) => {
   }
 
   isSearching.value = true
-
   try {
-    const res = await $fetch(
-      'https://api.themoviedb.org/3/search/tv',
-      {
-        query: {
-          api_key: config.public.tmdbApiKey,
-          query: q,
-          language: 'en-US'
-        }
+    const res = await $fetch('https://api.themoviedb.org/3/search/tv', {
+      query: {
+        api_key: config.public.tmdbApiKey,
+        query: q,
+        language: 'en-US'
       }
-    )
-
-    searchResults.value = (res.results || []).slice(0, 6)
-  } catch (e) {
-    console.error(e)
-    searchResults.value = []
+    })
+    searchResults.value = (res.results || []).slice(0, 9)
   } finally {
     isSearching.value = false
   }
 })
+
+/* =====================
+   DATA
+===================== */
+const trending = ref([])
+const airdate = ref([])
+const popular = ref([])
+
+onMounted(async () => {
+  const today = new Date().toISOString().split('T')[0]
+
+  const [t, a, p] = await Promise.all([
+    $fetch('https://api.themoviedb.org/3/trending/tv/week', {
+      query: { api_key: config.public.tmdbApiKey }
+    }),
+    $fetch('https://api.themoviedb.org/3/discover/tv', {
+      query: {
+        api_key: config.public.tmdbApiKey,
+        sort_by: 'first_air_date.desc',
+        'first_air_date.lte': today,
+        language: 'en-US'
+      }
+    }),
+    $fetch('https://api.themoviedb.org/3/discover/tv', {
+      query: {
+        api_key: config.public.tmdbApiKey,
+        sort_by: 'popularity.desc',
+        language: 'en-US'
+      }
+    })
+  ])
+
+  trending.value = t.results || []
+  airdate.value = a.results || []
+  popular.value = p.results || []
+})
 </script>
 
 <template>
-  <div class="search-page">
-    <h2>Search TV Series</h2>
+  <div class="page">
 
+    <!-- SEARCH -->
     <input
       v-model="searchQuery"
       placeholder="Search TV series..."
-      class="search-input"
+      class="search"
     />
 
-    <div v-if="isSearching" class="loading">
-      Searching...
-    </div>
+    <div v-if="isSearching" class="loading">Searching…</div>
 
-    <div v-if="searchResults.length" class="search-result">
+    <!-- SEARCH RESULT -->
+    <div v-if="searchResults.length" class="grid">
       <div
         v-for="tv in searchResults"
         :key="tv.id"
-        class="search-item"
+        class="card"
         @click="navigateTo(`/tv?id=${tv.id}`)"
       >
-        <img
-          v-if="tv.poster_path"
-          :src="`https://image.tmdb.org/t/p/w92${tv.poster_path}`"
-        />
-        <span>{{ tv.name }}</span>
+        <img :src="`https://image.tmdb.org/t/p/w185${tv.poster_path}`" />
+        <p>{{ tv.name }}</p>
       </div>
     </div>
+
+    <!-- TRENDING -->
+    <section v-if="!searchQuery">
+      <h3>🔥 Trending</h3>
+      <div class="grid">
+        <div
+          v-for="tv in trending"
+          :key="tv.id"
+          class="card"
+          @click="navigateTo(`/tv?id=${tv.id}`)"
+        >
+          <img :src="`https://image.tmdb.org/t/p/w185${tv.poster_path}`" />
+          <p>{{ tv.name }}</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- AIR DATE -->
+    <section v-if="!searchQuery">
+      <h3>🗓 Latest Air Date</h3>
+      <div class="grid">
+        <div
+          v-for="tv in airdate"
+          :key="tv.id"
+          class="card"
+          @click="navigateTo(`/tv?id=${tv.id}`)"
+        >
+          <img :src="`https://image.tmdb.org/t/p/w185${tv.poster_path}`" />
+          <p>{{ tv.name }}</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- POPULAR -->
+    <section v-if="!searchQuery">
+      <h3>👀 Most Watched</h3>
+      <div class="grid">
+        <div
+          v-for="tv in popular"
+          :key="tv.id"
+          class="card"
+          @click="navigateTo(`/tv?id=${tv.id}`)"
+        >
+          <img :src="`https://image.tmdb.org/t/p/w185${tv.poster_path}`" />
+          <p>{{ tv.name }}</p>
+        </div>
+      </div>
+    </section>
+
   </div>
 </template>
 
 <style scoped>
-.search-page {
-  max-width: 600px;
-  margin: auto;
-  padding: 20px;
-  color: #fff;
-  background: #0f0f0f;
-  min-height: 100vh;
+.page {
+  background:#0f0f0f;
+  min-height:100vh;
+  padding:20px;
+  color:#fff;
 }
 
-.search-input {
-  width: 100%;
-  padding: 12px;
-  border-radius: 10px;
-  border: 1px solid #333;
-  background: #1a1a1a;
-  color: #fff;
-  font-size: 14px;
+.search {
+  width:100%;
+  padding:12px;
+  border-radius:10px;
+  background:#1a1a1a;
+  border:1px solid #333;
+  color:#fff;
+  margin-bottom:10px;
 }
 
 .loading {
-  margin-top: 10px;
-  font-size: 13px;
-  opacity: 0.7;
+  opacity:.7;
+  margin-bottom:10px;
 }
 
-.search-result {
-  margin-top: 10px;
-  background: #111;
-  border-radius: 12px;
-  overflow: hidden;
+section {
+  margin-top:24px;
 }
 
-.search-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
-  cursor: pointer;
+section h3 {
+  margin-bottom:10px;
+  font-size:16px;
 }
 
-.search-item:hover {
-  background: #1f1f1f;
+.grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(140px,1fr));
+  gap:12px;
 }
 
-.search-item img {
-  width: 42px;
-  height: 62px;
-  object-fit: cover;
-  border-radius: 6px;
+.card {
+  cursor:pointer;
 }
 
-.search-item span {
-  font-size: 14px;
+.card img {
+  width:100%;
+  border-radius:10px;
+}
+
+.card p {
+  font-size:13px;
+  margin-top:6px;
 }
 </style>
