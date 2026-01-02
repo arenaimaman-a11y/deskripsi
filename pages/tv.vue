@@ -1,0 +1,415 @@
+<script setup>
+import { ref, computed, watch, onMounted } from 'vue'
+
+/* =====================
+   ROUTE & CONFIG
+===================== */
+const route = useRoute()
+const config = useRuntimeConfig()
+const tvId = route.query.id
+const DOMAIN = 'https://www.justplay-tv.online'
+
+/* =====================
+   STATE
+===================== */
+const tv = ref(null)
+const seasonList = ref([])
+const seasonData = ref(null)
+
+const selectedSeason = ref(null)
+const selectedEpisode = ref(null)
+
+const titleIndex = ref(0)
+
+const allImages = ref([])
+const mainImage = ref('')
+
+/* =====================
+   FLAG (ANTI RESET)
+===================== */
+const isRestored = ref(false)
+
+/* =====================
+   LOAD TV DETAIL
+===================== */
+if (tvId) {
+  const { data } = await useFetch(
+    `https://api.themoviedb.org/3/tv/${tvId}`,
+    {
+      query: {
+        api_key: config.public.tmdbApiKey,
+        language: 'en-US'
+      }
+    }
+  )
+
+  tv.value = data.value
+  seasonList.value = data.value.seasons || []
+}
+
+/* =====================
+   LOAD ALL IMAGES
+===================== */
+if (tvId) {
+  const images = await $fetch(
+    `https://api.themoviedb.org/3/tv/${tvId}/images`,
+    { query: { api_key: config.public.tmdbApiKey } }
+  )
+  allImages.value = images.backdrops || []
+}
+
+/* =====================
+   RESTORE STATE
+===================== */
+onMounted(() => {
+  const saved = localStorage.getItem(`tv_state_${tvId}`)
+  if (saved) {
+    const s = JSON.parse(saved)
+    selectedSeason.value = s.season
+    selectedEpisode.value = s.episode
+  }
+
+  if (!selectedSeason.value && seasonList.value.length) {
+    const today = new Date()
+    const released = seasonList.value.filter(
+      s => s.air_date && new Date(s.air_date) <= today
+    )
+    selectedSeason.value =
+      released.at(-1)?.season_number ||
+      seasonList.value.at(-1)?.season_number
+  }
+
+  isRestored.value = true
+})
+
+/* =====================
+   LOAD SEASON DATA
+===================== */
+watch(selectedSeason, async (s) => {
+  if (!s) return
+
+  const data = await $fetch(
+    `https://api.themoviedb.org/3/tv/${tvId}/season/${s}`,
+    {
+      query: {
+        api_key: config.public.tmdbApiKey,
+        language: 'en-US'
+      }
+    }
+  )
+
+  seasonData.value = data
+
+  if (!selectedEpisode.value) {
+    selectedEpisode.value =
+      data.episodes?.at(-1)?.episode_number || 1
+  }
+})
+
+/* =====================
+   SAVE STATE
+===================== */
+watch(
+  () => [selectedSeason.value, selectedEpisode.value],
+  ([s, e]) => {
+    if (!isRestored.value) return
+    if (!s || !e) return
+    localStorage.setItem(
+      `tv_state_${tvId}`,
+      JSON.stringify({ season: s, episode: e })
+    )
+  }
+)
+
+/* =====================
+   EPISODE DATA
+===================== */
+const episodeData = computed(() => {
+  if (!seasonData.value) return null
+  return seasonData.value.episodes.find(
+    e => e.episode_number == selectedEpisode.value
+  )
+})
+
+/* =====================
+   BASIC SEO (SITE)
+===================== */
+const seoKeywords = [
+  'Watch Online','Full Episode','HD','Free Streaming',
+  'Latest Episode','New Season'
+]
+
+const powerWords = [
+  'Must Watch','Explained','Big Twist','Final Scene','Shocking'
+]
+
+const aiTitles = computed(() => {
+  if (!tv.value || !episodeData.value) return []
+  return Array.from({ length: 100 }).map(() => {
+    const seo = seoKeywords[Math.floor(Math.random() * seoKeywords.length)]
+    const power = powerWords[Math.floor(Math.random() * powerWords.length)]
+    return `${tv.value.name} Season ${selectedSeason.value} Episode ${selectedEpisode.value} ${seo} – ${power}`
+  })
+})
+
+const titleText = computed(() => aiTitles.value[titleIndex.value] || '')
+
+function randomTitle () {
+  titleIndex.value = Math.floor(Math.random() * aiTitles.value.length)
+}
+
+/* =====================
+   YOUTUBE SEO (US) – STRONG & RANDOM
+===================== */
+const youtubeTitle = ref('')
+const youtubeDescription = ref('')
+
+const ytHooks = [
+  'You Won’t Believe What Happens',
+  'This Episode Changes Everything',
+  'Fans Are Shocked By This Episode',
+  'The Most Intense Episode So Far',
+  'This Scene Broke The Internet',
+  'Nobody Expected This Ending'
+]
+
+const ytOpeners = [
+  'Watch now before everyone spoils it.',
+  'This episode is trending across the US.',
+  'Fans are calling this the best episode yet.',
+  'This episode is taking over social media.',
+  'Viewers can’t stop talking about this episode.'
+]
+
+const ytStoryLines = [
+  'The tension rises as characters face unexpected consequences.',
+  'Major decisions are made that could change the future of the series.',
+  'The storyline takes a darker and more intense turn.',
+  'Relationships are tested as new conflicts emerge.',
+  'Power struggles push the story into dangerous territory.'
+]
+
+const ytCTAs = [
+  'Watch now and don’t miss what happens next.',
+  'Stay tuned for the next episode updates.',
+  'Perfect for fans of crime drama series.',
+  'Highly recommended for binge-watchers.',
+  'One of the must-watch episodes this season.'
+]
+
+function rand(arr) {
+  return arr[Math.floor(Math.random() * arr.length)]
+}
+
+function randomYoutubeTitle () {
+  if (!tv.value || !episodeData.value) return
+
+  youtubeTitle.value =
+    `${rand(ytHooks)} | ${tv.value.name} Season ${selectedSeason.value} ` +
+    `Episode ${selectedEpisode.value} Full Episode Streaming`
+}
+
+function randomYoutubeDescription () {
+  if (!tv.value || !episodeData.value) return
+
+  youtubeDescription.value = `
+Watch ${tv.value.name} Season ${selectedSeason.value} Episode ${selectedEpisode.value} full episode streaming online in HD.
+
+Episode "${episodeData.value.name}" delivers intense drama, shocking twists, and unforgettable moments that fans in the United States are searching for right now.
+
+${rand(ytStoryLines)}
+
+Why this episode is trending in the US:
+- Latest episode release
+- Strong viewer engagement
+- Popular crime drama TV series
+- Full episode available online
+
+If you’re searching for:
+${tv.value.name} season ${selectedSeason.value} episode ${selectedEpisode.value} full episode
+watch ${tv.value.name} online HD
+${tv.value.name} episode ${selectedEpisode.value} recap and explanation
+best TV series streaming in the United States
+
+${rand(ytOpeners)}
+${rand(ytCTAs)}
+
+#${tv.value.name.replace(/\s+/g, '')} #${tv.value.name.replace(/\s+/g, '')}Season${selectedSeason.value} #Episode${selectedEpisode.value} #TVSeries #FullEpisode #StreamingOnline
+`.trim()
+}
+
+/* AUTO GENERATE SETIAP EPISODE GANTI */
+watch(episodeData, (v) => {
+  if (v) {
+    randomYoutubeTitle()
+    randomYoutubeDescription()
+  }
+})
+
+
+/* =====================
+   LINK
+===================== */
+const slug = computed(() =>
+  tv.value
+    ? tv.value.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+    : ''
+)
+
+const episodeLink = computed(() => {
+  if (!slug.value || !selectedSeason.value || !selectedEpisode.value) return ''
+
+  return `https://justplay-tv.online/tv/${tvId}/${slug.value}-S${selectedSeason.value}-E${selectedEpisode.value}`
+})
+
+
+function copy(text) {
+  if (!text) return
+  navigator.clipboard.writeText(text)
+}
+
+
+/* =====================
+   RANDOM IMAGE
+===================== */
+function pickRandomImage () {
+  if (!allImages.value.length) return
+  const r = allImages.value[Math.floor(Math.random() * allImages.value.length)]
+  mainImage.value = `https://image.tmdb.org/t/p/w780${r.file_path}`
+}
+
+watch(tv, v => v && pickRandomImage(), { immediate: true })
+</script>
+
+
+<template>
+  <div class="page" v-if="tv">
+    <div class="card">
+
+      <img v-if="mainImage" class="poster" :src="mainImage" />
+
+      <div class="row">
+        <select v-model="selectedSeason">
+          <option v-for="s in seasonList" :key="s.id" :value="s.season_number">
+            Season {{ s.season_number }}
+          </option>
+        </select>
+
+        <select v-model="selectedEpisode">
+          <option
+            v-for="e in seasonData?.episodes"
+            :key="e.id"
+            :value="e.episode_number"
+          >
+            Episode {{ e.episode_number }}
+          </option>
+        </select>
+      </div>
+
+<div v-if="episodeData" class="box">
+  <label>Judul YouTube SEO (US)</label>
+
+  <textarea rows="2" :value="youtubeTitle" readonly />
+
+  <div class="actions">
+    <button @click="randomYoutubeTitle">🎲 Random</button>
+    <button @click="copy(youtubeTitle)">📋 Copy</button>
+  </div>
+</div>
+
+
+<div v-if="episodeData" class="box">
+  <label>Deskripsi YouTube SEO</label>
+
+  <textarea rows="8" :value="youtubeDescription" readonly />
+
+  <div class="actions">
+    <button @click="randomYoutubeDescription">🎲 Random</button>
+    <button @click="copy(youtubeDescription)">📋 Copy</button>
+  </div>
+</div>
+
+
+      <div v-if="episodeData" class="box">
+        <label>Link Episode (CPA)</label>
+        <input :value="episodeLink" readonly />
+        <button @click="copy(episodeLink)">🔗 Copy Link</button>
+      </div>
+
+    </div>
+  </div>
+</template>
+
+<style scoped>
+.page {
+  background: #0f0f0f;
+  min-height: 100vh;
+  padding: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.card {
+  background: #161616;
+  max-width: 600px;
+  width: 100%;
+  padding: 16px;
+  border-radius: 14px;
+  color: #fff;
+}
+
+.poster {
+  width: 100%;
+  border-radius: 12px;
+  margin-bottom: 12px;
+}
+
+.row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+select,
+input,
+textarea {
+  width: 100%;
+  background: #222;
+  border: 1px solid #333;
+  color: #fff;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+textarea {
+  resize: none;
+}
+
+.box {
+  margin-bottom: 16px;
+}
+
+label {
+  font-size: 13px;
+  opacity: 0.8;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+button {
+  background: #2563eb;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 8px;
+  color: white;
+  font-size: 14px;
+  cursor: pointer;
+}
+</style>
