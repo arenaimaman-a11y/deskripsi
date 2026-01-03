@@ -1,7 +1,21 @@
 <script setup>
 import { ref, watch, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 
+const router = useRouter()
 const config = useRuntimeConfig()
+
+/* =====================
+   NAVIGATION SAFE CTRL+CLICK
+===================== */
+function navigateTo(url, event) {
+  // Ctrl/Cmd/klik kanan → biarkan browser handle (buka tab baru / menu konteks)
+  if (event.ctrlKey || event.metaKey || event.button !== 0) return
+
+  // Klik biasa → SPA navigation
+  event.preventDefault()
+  router.push(url)
+}
 
 /* =====================
    SEARCH
@@ -82,30 +96,32 @@ onMounted(async () => {
 
     <!-- SEARCH RESULT -->
     <div v-if="searchResults.length" class="grid">
-      <div
+      <a
         v-for="tv in searchResults"
         :key="tv.id"
+        :href="`/tv?id=${tv.id}`"
         class="card"
-        @click="navigateTo(`/tv?id=${tv.id}`)"
+        @click="(event) => navigateTo(`/tv?id=${tv.id}`, event)"
       >
         <img :src="`https://image.tmdb.org/t/p/w185${tv.poster_path}`" />
         <p>{{ tv.name }}</p>
-      </div>
+      </a>
     </div>
 
     <!-- TRENDING -->
     <section v-if="!searchQuery">
       <h3>🔥 Trending</h3>
       <div class="grid">
-        <div
+        <a
           v-for="tv in trending"
           :key="tv.id"
+          :href="`/tv?id=${tv.id}`"
           class="card"
-          @click="navigateTo(`/tv?id=${tv.id}`)"
+          @click="(event) => navigateTo(`/tv?id=${tv.id}`, event)"
         >
           <img :src="`https://image.tmdb.org/t/p/w185${tv.poster_path}`" />
           <p>{{ tv.name }}</p>
-        </div>
+        </a>
       </div>
     </section>
 
@@ -113,15 +129,16 @@ onMounted(async () => {
     <section v-if="!searchQuery">
       <h3>🗓 Latest Air Date</h3>
       <div class="grid">
-        <div
+        <a
           v-for="tv in airdate"
           :key="tv.id"
+          :href="`/tv?id=${tv.id}`"
           class="card"
-          @click="navigateTo(`/tv?id=${tv.id}`)"
+          @click="(event) => navigateTo(`/tv?id=${tv.id}`, event)"
         >
           <img :src="`https://image.tmdb.org/t/p/w185${tv.poster_path}`" />
           <p>{{ tv.name }}</p>
-        </div>
+        </a>
       </div>
     </section>
 
@@ -129,15 +146,16 @@ onMounted(async () => {
     <section v-if="!searchQuery">
       <h3>👀 Most Watched</h3>
       <div class="grid">
-        <div
+        <a
           v-for="tv in popular"
           :key="tv.id"
+          :href="`/tv?id=${tv.id}`"
           class="card"
-          @click="navigateTo(`/tv?id=${tv.id}`)"
+          @click="(event) => navigateTo(`/tv?id=${tv.id}`, event)"
         >
           <img :src="`https://image.tmdb.org/t/p/w185${tv.poster_path}`" />
           <p>{{ tv.name }}</p>
-        </div>
+        </a>
       </div>
     </section>
 
@@ -184,6 +202,9 @@ section h3 {
 
 .card {
   cursor:pointer;
+  display:block;
+  text-decoration:none; /* hilangkan underline */
+  color: inherit;
 }
 
 .card img {
