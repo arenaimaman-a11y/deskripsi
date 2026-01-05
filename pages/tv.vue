@@ -230,7 +230,7 @@ function randomYoutubeTitle () {
 
   youtubeTitle.value =
     `${rand(ytHooks)} | ${tv.value.name} Season ${selectedSeason.value} ` +
-    `Episode ${selectedEpisode.value} Full Episode Streaming`
+    `Episode ${selectedEpisode.value} Full Episode (HD)`
 }
 
 function randomYoutubeDescription () {
