@@ -193,12 +193,8 @@ const youtubeTitle = ref('')
 const youtubeDescription = ref('')
 
 const ytHooks = [
-  'You Won’t Believe What Happens',
-  'This Episode Changes Everything',
-  'Fans Are Shocked By This Episode',
-  'The Most Intense Episode So Far',
-  'This Scene Broke The Internet',
-  'Nobody Expected This Ending'
+  'Watch',
+  'Stream'
 ]
 
 const ytOpeners = [
