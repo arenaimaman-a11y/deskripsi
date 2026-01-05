@@ -283,7 +283,7 @@ const slug = computed(() =>
 const episodeLink = computed(() => {
   if (!slug.value || !selectedSeason.value || !selectedEpisode.value) return ''
 
-  return `https://justplay-tv.online/tv/${tvId}/${slug.value}-S${selectedSeason.value}-E${selectedEpisode.value}`
+  return `${tv.value.name} S${selectedSeason.value} E${selectedEpisode.value}: https://justplay-tv.online/tv/${tvId}/${slug.value}-S${selectedSeason.value}-E${selectedEpisode.value}`
 })
 
 
