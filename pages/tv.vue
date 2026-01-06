@@ -192,34 +192,19 @@ function randomTitle () {
 const youtubeTitle = ref('')
 const youtubeDescription = ref('')
 
-const ytHooks = [
-  'Watch',
-  'Stream'
+const ytSuffixes = [
+  'Full Episode (HD)',
+  'Full Episode',
+  'Full Episode HD',
+  'Stream HD',
+  "Stream - (HD)",
+  '- (HD)'
 ]
 
-const ytOpeners = [
-  'Watch now before everyone spoils it.',
-  'This episode is trending across the US.',
-  'Fans are calling this the best episode yet.',
-  'This episode is taking over social media.',
-  'Viewers can’t stop talking about this episode.'
-]
 
-const ytStoryLines = [
-  'The tension rises as characters face unexpected consequences.',
-  'Major decisions are made that could change the future of the series.',
-  'The storyline takes a darker and more intense turn.',
-  'Relationships are tested as new conflicts emerge.',
-  'Power struggles push the story into dangerous territory.'
-]
 
-const ytCTAs = [
-  'Watch now and don’t miss what happens next.',
-  'Stay tuned for the next episode updates.',
-  'Perfect for fans of crime drama series.',
-  'Highly recommended for binge-watchers.',
-  'One of the must-watch episodes this season.'
-]
+
+
 
 function rand(arr) {
   return arr[Math.floor(Math.random() * arr.length)]
@@ -228,39 +213,46 @@ function rand(arr) {
 function randomYoutubeTitle () {
   if (!tv.value || !episodeData.value) return
 
+  const suffix = ytSuffixes[Math.floor(Math.random() * ytSuffixes.length)]
+
   youtubeTitle.value =
-    `${rand(ytHooks)} | ${tv.value.name} Season ${selectedSeason.value} ` +
-    `Episode ${selectedEpisode.value} Full Episode (HD)`
+    `${tv.value.name} Season ${selectedSeason.value} ` +
+    `Episode ${selectedEpisode.value} ${suffix}`
 }
+
+
 
 function randomYoutubeDescription () {
   if (!tv.value || !episodeData.value) return
 
+  const name = tv.value.name
+  const s = selectedSeason.value
+  const e = selectedEpisode.value
+
   youtubeDescription.value = `
-Watch ${tv.value.name} Season ${selectedSeason.value} Episode ${selectedEpisode.value} full episode streaming online in HD.
+🎬 Watch ${name} - Season ${s} Episode ${e} Full Episode
 
-Episode "${episodeData.value.name}" delivers intense drama, shocking twists, and unforgettable moments that fans in the United States are searching for right now.
+${name} S${s}E${e} HD
+${name} S${s} E${e} Full HD
+${name} S${s}XE${e} Full Episode
+${name} S${s} X E${e} Full Episode HD
+${name} Season ${s} Episode ${e} HD
+${name} Season ${s} Episode ${e} Full HD
+${name} Season ${s} Episode ${e} Full Episode
 
-${rand(ytStoryLines)}
 
-Why this episode is trending in the US:
-- Latest episode release
-- Strong viewer engagement
-- Popular crime drama TV series
-- Full episode available online
+I hope you enjoy watching the series ${name} Season ${s} Episode ${e} on My Channel.
+Subscribe to my channel and get notifications for the latest Episodes.
+Thanks for visiting & watching.
 
-If you’re searching for:
-${tv.value.name} season ${selectedSeason.value} episode ${selectedEpisode.value} full episode
-watch ${tv.value.name} online HD
-${tv.value.name} episode ${selectedEpisode.value} recap and explanation
-best TV series streaming in the United States
-
-${rand(ytOpeners)}
-${rand(ytCTAs)}
-
-#${tv.value.name.replace(/\s+/g, '')} #${tv.value.name.replace(/\s+/g, '')}Season${selectedSeason.value} #Episode${selectedEpisode.value} #TVSeries #FullEpisode #StreamingOnline
+#${name.replace(/\s+/g, '').toLowerCase()}
+#${name.replace(/\s+/g, '').toLowerCase()}season${s}
+#${name.replace(/\s+/g, '').toLowerCase()}episode${e}
+#${name.replace(/\s+/g, '').toLowerCase()}s${s}e${e}
+#tvseries #episodereview #seriesrecap #showbreakdown
 `.trim()
 }
+
 
 /* AUTO GENERATE SETIAP EPISODE GANTI */
 watch(episodeData, (v) => {
