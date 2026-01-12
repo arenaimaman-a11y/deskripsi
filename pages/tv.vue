@@ -403,11 +403,20 @@ async function convertPosterToJPG() {
 </div>
 
 
-      <div v-if="episodeData" class="box">
-        <label>Link Episode (CPA)</label>
-        <input :value="episodeLink" readonly />
-        <button @click="copy(episodeLink)">🔗 Copy Link</button>
-      </div>
+      <!-- BOX ATAS -->
+<div v-if="episodeData" class="box two-col">
+  <label>Link Episode (Original)</label>
+  <input :value="episodeLinkOriginal" readonly />
+  <button @click="copy(episodeLinkOriginal)">🔗 Copy Original</button>
+</div>
+
+<!-- BOX BAWAH (INI YANG KAMU MAKSUD) -->
+<div v-if="episodeData" class="box two-col">
+  <label>Link Episode (CPA)</label>
+  <input :value="episodeLink" readonly />
+  <button @click="copy(episodeLink)">🔗 Copy CPA</button>
+</div>
+
 
     </div>
   </div>
@@ -485,4 +494,26 @@ button {
   font-size: 14px;
   cursor: pointer;
 }
+/* =====================
+   TWO COLUMN LINK BOX
+===================== */
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.two-col label {
+  grid-column: 1 / -1;
+}
+
+.two-col input {
+  min-width: 0;
+}
+
+.two-col button {
+  white-space: nowrap;
+}
+
 </style>
