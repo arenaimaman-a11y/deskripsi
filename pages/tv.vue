@@ -275,6 +275,12 @@ const slug = computed(() =>
 const episodeLink = computed(() => {
   if (!slug.value || !selectedSeason.value || !selectedEpisode.value) return ''
 
+  return `${tv.value.name} S${selectedSeason.value} E${selectedEpisode.value}: https://go.justplay-tv.online/tv/${tvId}/${selectedSeason.value}/${selectedEpisode.value}`
+})
+
+const episodeLinkOriginal = computed(() => {
+  if (!tvId || !selectedSeason.value || !selectedEpisode.value) return ''
+
   return `${tv.value.name} S${selectedSeason.value} E${selectedEpisode.value}: https://justplay-tv.online/tv/${tvId}/${slug.value}-S${selectedSeason.value}-E${selectedEpisode.value}`
 })
 
@@ -394,7 +400,7 @@ async function convertPosterToJPG() {
 <div v-if="episodeData" class="box">
   <label>Deskripsi YouTube SEO</label>
 
-  <textarea rows="8" :value="youtubeDescription" readonly />
+  <textarea rows="5" :value="youtubeDescription" readonly />
 
   <div class="actions">
     <button @click="randomYoutubeDescription">🎲 Random</button>
@@ -404,20 +410,18 @@ async function convertPosterToJPG() {
 
 
       <!-- BOX ATAS -->
-<div v-if="episodeData" class="box two-col">
+<div v-if="episodeData" class="box link-vertical">
   <label>Link Episode (Original)</label>
   <input :value="episodeLinkOriginal" readonly />
-  <button @click="copy(episodeLinkOriginal)">🔗 Copy Original</button>
+  <button @click="copy(episodeLinkOriginal)">🔗 Copy </button>
 </div>
 
 <!-- BOX BAWAH (INI YANG KAMU MAKSUD) -->
-<div v-if="episodeData" class="box two-col">
-  <label>Link Episode (CPA)</label>
+<div v-if="episodeData" class="box link-vertical">
+  <label>Link (Cineflix)</label>
   <input :value="episodeLink" readonly />
-  <button @click="copy(episodeLink)">🔗 Copy CPA</button>
+  <button @click="copy(episodeLink)">🔗 Copy </button>
 </div>
-
-
     </div>
   </div>
 </template>
@@ -440,8 +444,10 @@ async function convertPosterToJPG() {
   color: #fff;
 }
 
-.poster {
+  .poster {
   width: 100%;
+  max-height: 140px;     /* 🔥 BATASI TINGGI */
+  object-fit: cover;    /* potong rapi, tidak gepeng */
   border-radius: 12px;
   margin-bottom: 12px;
 }
