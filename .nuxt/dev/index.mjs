@@ -14,7 +14,7 @@ import destr, { destr as destr$1 } from 'file://C:/Users/AsSaLamuaLaikuM/deskrip
 import { snakeCase } from 'file://C:/Users/AsSaLamuaLaikuM/deskripsi/node_modules/scule/dist/index.mjs';
 import { createHead as createHead$1, propsToString, renderSSRHead } from 'file://C:/Users/AsSaLamuaLaikuM/deskripsi/node_modules/unhead/dist/server.mjs';
 import { stringify, uneval } from 'file://C:/Users/AsSaLamuaLaikuM/deskripsi/node_modules/devalue/index.js';
-import { isVNode, toValue, isRef } from 'file://C:/Users/AsSaLamuaLaikuM/deskripsi/node_modules/vue/index.mjs';
+import { isVNode, isRef, toValue } from 'file://C:/Users/AsSaLamuaLaikuM/deskripsi/node_modules/vue/index.mjs';
 import { DeprecationsPlugin, PromisesPlugin, TemplateParamsPlugin, AliasSortingPlugin } from 'file://C:/Users/AsSaLamuaLaikuM/deskripsi/node_modules/unhead/dist/plugins.mjs';
 import { createHooks } from 'file://C:/Users/AsSaLamuaLaikuM/deskripsi/node_modules/hookable/dist/index.mjs';
 import { createFetch, Headers as Headers$1 } from 'file://C:/Users/AsSaLamuaLaikuM/deskripsi/node_modules/ofetch/dist/node.mjs';
@@ -909,7 +909,7 @@ async function defaultHandler(error, event, opts) {
       ansiError
     );
   }
-  const useJSON = opts?.json || !getRequestHeader(event, "accept")?.includes("text/html");
+  const useJSON = opts?.json ?? !getRequestHeader(event, "accept")?.includes("text/html");
   const headers = {
     "content-type": useJSON ? "application/json" : "text/html",
     // Prevent browser from guessing the MIME types of resources.
@@ -1153,9 +1153,6 @@ const _fBfO8_ = eventHandler((event) => {
     ...encodingHeader.split(",").map((e) => EncodingMap[e.trim()]).filter(Boolean).sort(),
     ""
   ];
-  if (encodings.length > 1) {
-    appendResponseHeader(event, "Vary", "Accept-Encoding");
-  }
   for (const encoding of encodings) {
     for (const _id of [id + encoding, joinURL(id, "index.html" + encoding)]) {
       const _asset = getAsset(_id);
@@ -1172,6 +1169,9 @@ const _fBfO8_ = eventHandler((event) => {
       throw createError({ statusCode: 404 });
     }
     return;
+  }
+  if (asset.encoding !== void 0) {
+    appendResponseHeader(event, "Vary", "Accept-Encoding");
   }
   const ifNotMatch = getRequestHeader(event, "if-none-match") === asset.etag;
   if (ifNotMatch) {
@@ -1750,7 +1750,7 @@ async function runTask(name, {
 }
 
 if (!globalThis.crypto) {
-  globalThis.crypto = nodeCrypto;
+  globalThis.crypto = nodeCrypto.webcrypto;
 }
 const { NITRO_NO_UNIX_SOCKET, NITRO_DEV_WORKER_ID } = process.env;
 trapUnhandledNodeErrors();

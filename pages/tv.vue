@@ -220,6 +220,46 @@ function randomYoutubeTitle () {
     `Episode ${selectedEpisode.value} ${suffix}`
 }
 
+// =====================
+// CUSTOM DESKRIPSI OTOMATIS
+// =====================
+const customDescription = computed(() => {
+  if (!tv.value || !episodeData.value) return ''
+
+  const name = tv.value.name
+  const s = selectedSeason.value
+  const e = selectedEpisode.value
+
+  const videoFile = `${name.replace(/\s+/g, '').toLowerCase()}.mp4`
+  const title = `${name} Season ${s} Episode ${e} Full Episode (HD)`
+  const description = `
+🎬 Watch ${name} - Season ${s} Episode ${e} Full Episode
+
+${name} S${s}E${e} HD
+${name} S${s} E${e} Full HD
+${name} S${s}XE${e} Full Episode
+${name} S${s} X E${e} Full Episode HD
+${name} Season ${s} Episode ${e} HD
+${name} Season ${s} Episode ${e} Full HD
+${name} Season ${s} Episode ${e} Full Episode
+
+I hope you enjoy watching the series ${name} Season ${s} Episode ${e} on My Channel.
+Subscribe to my channel and get notifications for the latest Episodes.
+Thanks for visiting & watching.
+
+#${name.replace(/\s+/g, '').toLowerCase()}
+#${name.replace(/\s+/g, '').toLowerCase()}season${s}
+#${name.replace(/\s+/g, '').toLowerCase()}episode${e}
+#${name.replace(/\s+/g, '').toLowerCase()}s${s}e${e}
+#tvseries #episodereview #seriesrecap #showbreakdown
+`.trim()
+
+  const thumbnail = `${name.replace(/\s+/g, '').toLowerCase()}.jpg`
+  const privacy = 'public'
+  const duration = '22' // misal durasi
+
+  return `${videoFile},${title},"${description}",${thumbnail},${privacy},${duration}`
+})
 
 
 function randomYoutubeDescription () {
@@ -344,6 +384,37 @@ async function convertPosterToJPG() {
     )
   }
 }
+// =====================
+// DOWNLOAD IMAGE LANGSUNG (semua huruf kecil, tanpa spasi)
+// =====================
+async function downloadImage() {
+  if (!landscapeImage.value || !tv.value) return
+
+  try {
+    // Ambil gambar sebagai blob
+    const response = await fetch(landscapeImage.value)
+    const blob = await response.blob()
+
+    // Buat object URL
+    const url = URL.createObjectURL(blob)
+
+    // Nama file: semua lowercase, hapus spasi
+    const name = tv.value.name.replace(/\s+/g, '').toLowerCase() + '.jpg'
+
+    const link = document.createElement('a')
+    link.href = url
+    link.download = name
+
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+
+    // Hapus object URL setelah download
+    URL.revokeObjectURL(url)
+  } catch (err) {
+    console.error('Download gagal:', err)
+  }
+}
 
 </script>
 
@@ -384,6 +455,15 @@ async function convertPosterToJPG() {
           </option>
         </select>
       </div>
+<img
+  v-if="landscapeImage"
+  class="poster"
+  :src="landscapeImage"
+  draggable="true"
+/>
+<div v-if="landscapeImage" class="actions">
+  <button @click="downloadImage">⬇️ Download Image</button>
+</div>
 
 <div v-if="episodeData" class="box">
   <label>Judul YouTube SEO (US)</label>
@@ -405,6 +485,19 @@ async function convertPosterToJPG() {
   <div class="actions">
     <button @click="randomYoutubeDescription">🎲 Random</button>
     <button @click="copy(youtubeDescription)">📋 Copy</button>
+  </div>
+</div>
+
+<!-- Kolom Custom Deskripsi (CSV style, otomatis) -->
+<div v-if="episodeData" class="box">
+  <label>Custom Deskripsi CSV (Editable)</label>
+  <textarea
+    rows="7"
+    :value="customDescription"
+    readonly
+  ></textarea>
+  <div class="actions">
+    <button @click="copy(customDescription)">📋 Copy</button>
   </div>
 </div>
 
