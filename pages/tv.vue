@@ -262,7 +262,7 @@ Thanks for visiting & watching.
   const privacy = 'public'
   const duration = '22' // misal durasi
 
-  return `${videoFile},${title},"${description}",${thumbnail},${privacy},${duration}`
+  return `${videoFile},${title},"${description}",${thumbnail}`
 })
 
 
