@@ -70,6 +70,10 @@ function formatFullDate(date) {
     year: 'numeric'
   })
 }
+const mainHashtag = computed(() => {
+  if (!tv.value) return ''
+  return `${tv.value.name.replace(/\s+/g, '').toLowerCase()}.mp4`
+})
 
 /* =====================
    LOAD ALL IMAGES
@@ -468,13 +472,29 @@ async function downloadImage() {
 <div v-if="episodeData" class="box">
   <label>Judul YouTube SEO (US)</label>
 
-  <textarea rows="2" :value="youtubeTitle" readonly />
+  <div class="two-col">
+    <!-- KOLOM KIRI -->
+    <textarea
+      rows="2"
+      :value="youtubeTitle"
+      readonly
+    />
+
+    <!-- KOLOM KANAN -->
+    <textarea
+      rows="2"
+      :value="mainHashtag"
+      readonly
+    />
+  </div>
 
   <div class="actions">
     <button @click="randomYoutubeTitle">🎲 Random</button>
-    <button @click="copy(youtubeTitle)">📋 Copy</button>
+    <button @click="copy(youtubeTitle)">📋 Copy Judul</button>
+    <button @click="copy(mainHashtag)">#️⃣ Copy Hashtag</button>
   </div>
 </div>
+
 
 
 <div v-if="episodeData" class="box">
