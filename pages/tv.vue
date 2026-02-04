@@ -234,7 +234,7 @@ const customDescription = computed(() => {
   const s = selectedSeason.value
   const e = selectedEpisode.value
 
-  const videoFile = `${name.replace(/\s+/g, '').toLowerCase()}.mp4`
+  const videoFile = `GANT_DENGAN_ID`
   const title = `${name} Season ${s} Episode ${e} Full Episode (HD)`
   const description = `
 🎬 Watch ${name} - Season ${s} Episode ${e} Full Episode
