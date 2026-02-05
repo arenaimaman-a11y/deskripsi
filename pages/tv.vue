@@ -227,16 +227,29 @@ function randomYoutubeTitle () {
 // =====================
 // CUSTOM DESKRIPSI OTOMATIS
 // =====================
+function generateRandomId(length = 10) {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  for (let i = 0; i < length; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
+
 const customDescription = computed(() => {
-  if (!tv.value || !episodeData.value) return ''
+  if (!tv.value || !episodeData.value) return '';
 
-  const name = tv.value.name
-  const s = selectedSeason.value
-  const e = selectedEpisode.value
+  const name = tv.value.name;
+  const s = selectedSeason.value;
+  const e = selectedEpisode.value;
 
-const videoFile = `GANT_DENGAN_ID`
-const title = `${name} Season ${s} Episode ${e} Full Episode (HD)`
-const description = `
+  // =====================
+  // RANDOM ID UNTUK VIDEO
+  // =====================
+  const videoFile = generateRandomId(10);
+
+  const title = `${name} Season ${s} Episode ${e} Full Episode (HD)`;
+  const description = `
 🎬 Watch ${name} - Season ${s} Episode ${e} Full Episode
 
 ${name} S${s}E${e} HD
@@ -256,14 +269,13 @@ Thanks for visiting & watching.
 #${name.replace(/\s+/g, '').toLowerCase()}episode${e}
 #${name.replace(/\s+/g, '').toLowerCase()}s${s}e${e}
 #tvseries #episodereview #seriesrecap #showbreakdown
-`.trim()
+`.trim();
 
-const thumbnail = `C:\\Users\\AsSaLamuaLaikuM\\Desktop\\thumb\\${name.replace(/\s+/g, '').toLowerCase()}.jpg`
-const comment = `${tv.value.name} S${selectedSeason.value} E${selectedEpisode.value}: https://justplay-tv.online/tv/${tvId}/${selectedSeason.value}/${selectedEpisode.value}`
+  const thumbnail = `C:\\Users\\AsSaLamuaLaikuM\\Desktop\\thumb\\${name.replace(/\s+/g, '').toLowerCase()}.jpg`;
+  const comment = `${tv.value.name} S${selectedSeason.value} E${selectedEpisode.value}: https://justplay-tv.online/tv/${tvId}/${selectedSeason.value}/${selectedEpisode.value}`;
 
-return `${videoFile},${title},"${description}",${thumbnail},"${comment}"`
-})
-
+  return `${videoFile},${title},"${description}",${thumbnail},"${comment}"`;
+});
 
 function randomYoutubeDescription () {
   if (!tv.value || !episodeData.value) return
