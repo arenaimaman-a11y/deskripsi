@@ -264,7 +264,7 @@ Thanks for visiting & watching.
   const thumbnail = `C:\\Users\\AsSaLamuaLaikuM\\Desktop\\thumb\\${name.replace(/\s+/g, '').toLowerCase()}.jpg`;
 
   // Buat comment
-  const comment = `${name} S${s} E${e}: https://justplay-tv.online/tv/${tvId}/${s}/${e}`;
+  const comment = `${name} S${s} E${e}: https://justplay-tv.online/tv/${tvId}/${slug.value}-S${selectedSeason.value}-E${selectedEpisode.value}`;
 
   // Gabungkan ke format CSV: title,description,thumbnail,comment
   // Deskripsi dibungkus dengan tanda kutip agar multi-line tetap aman di CSV
