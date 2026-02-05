@@ -225,30 +225,19 @@ function randomYoutubeTitle () {
 }
 
 // =====================
-// CUSTOM DESKRIPSI OTOMATIS
+// CUSTOM DESKRIPSI OTOMATIS KE FORMAT CSV TANPA RANDOM ID
 // =====================
-function generateRandomId(length = 11) {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let result = '';
-  for (let i = 0; i < length; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result;
-}
-
-const customDescription = computed(() => {
+const customDescriptionCSV = computed(() => {
   if (!tv.value || !episodeData.value) return '';
 
   const name = tv.value.name;
   const s = selectedSeason.value;
   const e = selectedEpisode.value;
 
-  // =====================
-  // RANDOM ID UNTUK VIDEO
-  // =====================
-  const videoFile = generateRandomId(10);
-
+  // ===== TITLE =====
   const title = `${name} Season ${s} Episode ${e} Full Episode (HD)`;
+
+  // ===== DESCRIPTION =====
   const description = `
 🎬 Watch ${name} - Season ${s} Episode ${e} Full Episode
 
@@ -271,10 +260,15 @@ Thanks for visiting & watching.
 #tvseries #episodereview #seriesrecap #showbreakdown
 `.trim();
 
+  // ===== THUMBNAIL =====
   const thumbnail = `C:\\Users\\AsSaLamuaLaikuM\\Desktop\\thumb\\${name.replace(/\s+/g, '').toLowerCase()}.jpg`;
-  const comment = `${tv.value.name} S${selectedSeason.value} E${selectedEpisode.value}: https://justplay-tv.online/tv/${tvId}/${selectedSeason.value}/${selectedEpisode.value}`;
 
-  return `${videoFile},${title},"${description}",${thumbnail},"${comment}"`;
+  // ===== COMMENT =====
+  const comment = `${name} S${s} E${e}: https://justplay-tv.online/tv/${tvId}/${s}/${e}`;
+
+  // ===== GABUNG KE FORMAT CSV =====
+  // Deskripsi dibungkus dengan tanda kutip agar multi-line tetap aman di CSV
+  return `${title},"${description}",${thumbnail},"${comment}"`;
 });
 
 function randomYoutubeDescription () {
