@@ -259,7 +259,7 @@ Thanks for visiting & watching.
 `.trim()
 
 const thumbnail = `C:\\Users\\AsSaLamuaLaikuM\\Desktop\\thumb\\${name.replace(/\s+/g, '').toLowerCase()}.jpg`
-const comment = `${name} S${s} E${e}: https://justplay-tv.online/tv/262262/under-salt-marsh-S${s}-E${e}`
+const comment = `${tv.value.name} S${selectedSeason.value} E${selectedEpisode.value}: https://go.justplay-tv.online/tv/${tvId}/${selectedSeason.value}/${selectedEpisode.value}`
 
 return `${videoFile},${title},"${description}",${thumbnail},"${comment}"`
 })
