@@ -262,7 +262,7 @@ Thanks for visiting & watching.
   const privacy = 'public'
   const duration = '22' // misal durasi
 
-  return `${videoFile},${title},"${description}",C:\Users\AsSaLamuaLaikuM\Desktop\thumb\${thumbnail}`
+  return `${videoFile},${title},"${description}",${thumbnail}`
 })
 
 
