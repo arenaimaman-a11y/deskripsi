@@ -225,25 +225,14 @@ function randomYoutubeTitle () {
 }
 
 // =====================
-// CUSTOM DESKRIPSI OTOMATIS KE FORMAT CSV
+// CUSTOM DESKRIPSI OTOMATIS
 // =====================
-function generateRandomId(length = 11) {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let result = '';
-  for (let i = 0; i < length; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result;
-}
+const customDescription = computed(() => {
+  if (!tv.value || !episodeData.value) return ''
 
-const customDescriptionCSV = computed(() => {
-  if (!tv.value || !episodeData.value) return '';
-
-  const name = tv.value.name;
-  const s = selectedSeason.value;
-  const e = selectedEpisode.value;
-
-  const videoFile = generateRandomId(10);
+  const name = tv.value.name
+  const s = selectedSeason.value
+  const e = selectedEpisode.value
 
   // Buat title
   const title = `${name} Season ${s} Episode ${e} Full Episode (HD)`;
@@ -281,6 +270,7 @@ Thanks for visiting & watching.
   // Deskripsi dibungkus dengan tanda kutip agar multi-line tetap aman di CSV
   return `${title},"${description}",${thumbnail},"${comment}"`;
 });
+
 
 function randomYoutubeDescription () {
   if (!tv.value || !episodeData.value) return
