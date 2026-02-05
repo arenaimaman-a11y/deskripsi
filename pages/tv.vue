@@ -258,7 +258,7 @@ Thanks for visiting & watching.
 #tvseries #episodereview #seriesrecap #showbreakdown
 `.trim()
 
-  const thumbnail = `${name.replace(/\s+/g, '').toLowerCase()}.jpg`
+  const thumbnail = `C:\\Users\\AsSaLamuaLaikuM\\Desktop\\thumb\\${name.replace(/\s+/g, '').toLowerCase()}.jpg`
   const privacy = 'public'
   const duration = '22' // misal durasi
 
