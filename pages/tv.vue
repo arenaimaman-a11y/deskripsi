@@ -234,9 +234,9 @@ const customDescription = computed(() => {
   const s = selectedSeason.value
   const e = selectedEpisode.value
 
-  const videoFile = `GANT_DENGAN_ID`
-  const title = `${name} Season ${s} Episode ${e} Full Episode (HD)`
-  const description = `
+const videoFile = `GANT_DENGAN_ID`
+const title = `${name} Season ${s} Episode ${e} Full Episode (HD)`
+const description = `
 🎬 Watch ${name} - Season ${s} Episode ${e} Full Episode
 
 ${name} S${s}E${e} HD
@@ -258,11 +258,10 @@ Thanks for visiting & watching.
 #tvseries #episodereview #seriesrecap #showbreakdown
 `.trim()
 
-  const thumbnail = `C:\\Users\\AsSaLamuaLaikuM\\Desktop\\thumb\\${name.replace(/\s+/g, '').toLowerCase()}.jpg`
-  const privacy = 'public'
-  const duration = '22' // misal durasi
+const thumbnail = `C:\\Users\\AsSaLamuaLaikuM\\Desktop\\thumb\\${name.replace(/\s+/g, '').toLowerCase()}.jpg`
+const comment = `${name} S${s} E${e}: https://justplay-tv.online/tv/262262/under-salt-marsh-S${s}-E${e}`
 
-  return `${videoFile},${title},"${description}",${thumbnail}`
+return `${videoFile},${title},"${description}",${thumbnail},"${comment}"`
 })
 
 
