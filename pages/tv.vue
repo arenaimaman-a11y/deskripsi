@@ -16,7 +16,7 @@ const tv = ref(null)
 const seasonList = ref([])
 const seasonData = ref(null)
 const posterJPG = ref('')
-const landscapeImage = ref('')
+const landscapeImages = ref([]) // isi 3 gambar berbeda
 
 const poster = computed(() =>
   tv.value?.poster_path
@@ -198,7 +198,7 @@ const youtubeDescription = ref('')
 
 const ytSuffixes = [
   'Full Episode (HD)',
-  'Full Episode',
+  'Full Episodes',
   'Full Episode HD',
   'Stream HD',
   "Stream - (HD)",
@@ -234,10 +234,23 @@ const customDescription = computed(() => {
   const s = selectedSeason.value
   const e = selectedEpisode.value
 
-  // Buat title
-  const title = `${name} Season ${s} Episode ${e} Full Episode (HD)`;
+  // =====================
+  // RANDOM TITLE
+  // =====================
+  const titleTemplates = [
+    `${name} Season ${s} Episode ${e} Full Episode (HD)`,
+    `${name} Season ${s} Episode ${e} Full Episode`,
+    `${name} Season ${s} Episode ${e} (HD)`,
+    `${name} Season ${s} Episode ${e} - HD`,
+    `${name} Season ${s} Episode ${e} - Full Episode`
+  ]
 
-  // Buat description seperti contoh
+  const title =
+    titleTemplates[Math.floor(Math.random() * titleTemplates.length)]
+
+  // =====================
+  // DESCRIPTION
+  // =====================
   const description = `
 🎬 Watch ${name} - Season ${s} Episode ${e} Full Episode
 
@@ -258,18 +271,38 @@ Thanks for visiting & watching.
 #${name.replace(/\s+/g, '').toLowerCase()}episode${e}
 #${name.replace(/\s+/g, '').toLowerCase()}s${s}e${e}
 #tvseries #episodereview #seriesrecap #showbreakdown
-`.trim();
+`.trim()
 
-  // Buat thumbnail
-  const thumbnail = `C:\\Users\\AsSaLamuaLaikuM\\Desktop\\thumb\\${name.replace(/\s+/g, '').toLowerCase()}.jpg`;
+  // =====================
+  // THUMBNAIL
+  // =====================
+// =====================
+// RANDOM THUMBNAIL (namaseries-1.jpg)
+// =====================
+const randomThumb = Math.floor(Math.random() * 3) + 1
 
-  // Buat comment
-  const comment = `${name} S${s} E${e}: https://justplay-tv.online/tv/${tvId}/${slug.value}-S${selectedSeason.value}-E${selectedEpisode.value}`;
+const thumbnail = `C:\\Users\\AsSaLamuaLaikuM\\Desktop\\thumb\\${name
+  .replace(/\s+/g, '')
+  .toLowerCase()}_${randomThumb}.jpg`
 
-  // Gabungkan ke format CSV: title,description,thumbnail,comment
-  // Deskripsi dibungkus dengan tanda kutip agar multi-line tetap aman di CSV
-  return `${title},"${description}",${thumbnail},"${comment}"`;
-});
+
+// =====================
+// CUSTOM LINK FORMAT
+// =====================
+const slug = name
+  .toLowerCase()
+  .replace(/\s+/g, '-')
+  .replace(/[^a-z0-9-]/g, '')
+
+const comment = `${name} S${s} E${e}: http://justplay-tv.online/tv/${tvId}/${slug}-S${s}-E${e}`
+
+
+  // =====================
+  // CSV OUTPUT
+  // =====================
+  return `${title},"${description}",${thumbnail},"${comment}"`
+})
+
 
 
 function randomYoutubeDescription () {
@@ -344,30 +377,25 @@ function copy(text) {
 /* =====================
    RANDOM IMAGE
 ===================== */
-function pickRandomImage () {
-  // GUARD LEVEL 1
+function pickRandomImages () {
   if (!Array.isArray(allImages.value)) return
+  if (allImages.value.length < 3) return
 
-  // GUARD LEVEL 2
-  if (allImages.value.length === 0) return
+  const shuffled = [...allImages.value].sort(() => 0.5 - Math.random())
+  const selected = shuffled.slice(0, 3)
 
-  const index = Math.floor(Math.random() * allImages.value.length)
-  const r = allImages.value[index]
-
-  // GUARD LEVEL 3
-  if (!r || !r.file_path) return
-
-  const original =
-    'https://image.tmdb.org/t/p/original' + r.file_path
-
-  // PAKSA JPG (ANTI WEBP, DRAG AMAN)
-  landscapeImage.value =
-    'https://wsrv.nl/?url=' +
-    encodeURIComponent(original) +
-    '&format=jpg&n=-1&q=90'
+  landscapeImages.value = selected.map(r => {
+    const original = 'https://image.tmdb.org/t/p/original' + r.file_path
+    return (
+      'https://wsrv.nl/?url=' +
+      encodeURIComponent(original) +
+      '&format=jpg&n=-1&q=90'
+    )
+  })
 }
 
-watch(tv, v => v && pickRandomImage(), { immediate: true })
+
+watch(tv, v => v && pickRandomImages(), { immediate: true })
 async function convertPosterToJPG() {
   if (!tv.value?.poster_path) return
 
@@ -395,36 +423,64 @@ async function convertPosterToJPG() {
   }
 }
 // =====================
-// DOWNLOAD IMAGE LANGSUNG (semua huruf kecil, tanpa spasi)
+// DOWNLOAD IMAGE < 2MB (AUTO COMPRESS)
 // =====================
-async function downloadImage() {
-  if (!landscapeImage.value || !tv.value) return
+async function downloadImage(index = 1) {
+  if (!landscapeImages.value?.length || !tv.value) return
+
+  if (typeof index !== 'number') index = 1
+  const imgUrl = landscapeImages.value[index - 1]
+  if (!imgUrl) return
 
   try {
-    // Ambil gambar sebagai blob
-    const response = await fetch(landscapeImage.value)
-    const blob = await response.blob()
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.src = imgUrl
 
-    // Buat object URL
-    const url = URL.createObjectURL(blob)
+    img.onload = async () => {
+      const canvas = document.createElement('canvas')
+      canvas.width = img.width
+      canvas.height = img.height
 
-    // Nama file: semua lowercase, hapus spasi
-    const name = tv.value.name.replace(/\s+/g, '').toLowerCase() + '.jpg'
+      const ctx = canvas.getContext('2d')
+      ctx.drawImage(img, 0, 0)
 
-    const link = document.createElement('a')
-    link.href = url
-    link.download = name
+      let quality = 0.9
+      let blob = null
 
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
+      // turunkan kualitas sampai < 2MB
+      do {
+        blob = await new Promise(resolve =>
+          canvas.toBlob(resolve, 'image/jpeg', quality)
+        )
+        quality -= 0.05
+      } while (blob && blob.size > 2 * 1024 * 1024 && quality > 0.4)
 
-    // Hapus object URL setelah download
-    URL.revokeObjectURL(url)
+      const url = URL.createObjectURL(blob)
+
+      const baseName = tv.value.name
+  .replace(/:/g, '')          // 🔥 HAPUS TITIK DUA
+  .replace(/\s+/g, '')        // hapus spasi
+  .toLowerCase()
+
+
+      const filename = `${baseName}_${index}.jpg`
+
+      const link = document.createElement('a')
+      link.href = url
+      link.download = filename
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+
+      URL.revokeObjectURL(url)
+    }
   } catch (err) {
     console.error('Download gagal:', err)
   }
 }
+
+
 
 </script>
 
@@ -432,13 +488,6 @@ async function downloadImage() {
 <template>
   <div class="page" v-if="tv">
     <div class="card">
-
-<img
-  v-if="landscapeImage"
-  class="poster"
-  :src="landscapeImage"
-  draggable="true"
-/>
 
 
 
@@ -465,15 +514,23 @@ async function downloadImage() {
           </option>
         </select>
       </div>
-<img
-  v-if="landscapeImage"
-  class="poster"
-  :src="landscapeImage"
-  draggable="true"
-/>
-<div v-if="landscapeImage" class="actions">
-  <button @click="downloadImage">⬇️ Download Image</button>
+      <div v-if="landscapeImages.length" class="thumb-grid">
+  <img
+    v-for="(img, i) in landscapeImages"
+    :key="i"
+    :src="img"
+    class="poster"
+    draggable="true"
+  />
 </div>
+
+
+<div v-if="landscapeImages.length" class="actions">
+  <button @click="downloadImage(0)">Download Thumb 1</button>
+  <button @click="downloadImage(1)">Download Thumb 2</button>
+  <button @click="downloadImage(2)">Download Thumb 3</button>
+</div>
+
 
 <div v-if="episodeData" class="box">
   <label>Judul YouTube SEO (US)</label>
@@ -506,7 +563,7 @@ async function downloadImage() {
 <div v-if="episodeData" class="box">
   <label>Deskripsi YouTube SEO</label>
 
-  <textarea rows="5" :value="youtubeDescription" readonly />
+  <textarea rows="2" :value="youtubeDescription" readonly />
 
   <div class="actions">
     <button @click="randomYoutubeDescription">🎲 Random</button>
@@ -518,7 +575,7 @@ async function downloadImage() {
 <div v-if="episodeData" class="box">
   <label>Custom Deskripsi CSV (Editable)</label>
   <textarea
-    rows="7"
+    rows="2"
     :value="customDescription"
     readonly
   ></textarea>
@@ -563,13 +620,25 @@ async function downloadImage() {
   color: #fff;
 }
 
-  .poster {
+.poster {
   width: 100%;
-  max-height: 140px;     /* 🔥 BATASI TINGGI */
-  object-fit: cover;    /* potong rapi, tidak gepeng */
+  height: 90px;          /* 👈 bikin lebih pendek */
+  object-fit: cover;    /* potong rapi */
   border-radius: 12px;
   margin-bottom: 12px;
 }
+
+.thumb-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.thumb-grid .poster {
+  height: 70px;      /* 👈 lebih kecil dari poster utama */
+  margin-bottom: 0;
+}
+
 
 .row {
   display: flex;
