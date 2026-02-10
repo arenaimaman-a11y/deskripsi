@@ -425,62 +425,51 @@ async function convertPosterToJPG() {
 // =====================
 // DOWNLOAD IMAGE < 2MB (AUTO COMPRESS)
 // =====================
-async function downloadImage(index = 1) {
+async function downloadImage(index) {
   if (!landscapeImages.value?.length || !tv.value) return
 
-  if (typeof index !== 'number') index = 1
-  const imgUrl = landscapeImages.value[index - 1]
+  const imgUrl = landscapeImages.value[index]
   if (!imgUrl) return
 
-  try {
-    const img = new Image()
-    img.crossOrigin = 'anonymous'
-    img.src = imgUrl
+  const img = new Image()
+  img.crossOrigin = 'anonymous'
+  img.src = imgUrl
 
-    img.onload = async () => {
-      const canvas = document.createElement('canvas')
-      canvas.width = img.width
-      canvas.height = img.height
+  img.onload = async () => {
+    const canvas = document.createElement('canvas')
+    canvas.width = img.width
+    canvas.height = img.height
 
-      const ctx = canvas.getContext('2d')
-      ctx.drawImage(img, 0, 0)
+    const ctx = canvas.getContext('2d')
+    ctx.drawImage(img, 0, 0)
 
-      let quality = 0.9
-      let blob = null
+    let quality = 0.9
+    let blob
 
-      // turunkan kualitas sampai < 2MB
-      do {
-        blob = await new Promise(resolve =>
-          canvas.toBlob(resolve, 'image/jpeg', quality)
-        )
-        quality -= 0.05
-      } while (blob && blob.size > 2 * 1024 * 1024 && quality > 0.4)
+    do {
+      blob = await new Promise(resolve =>
+        canvas.toBlob(resolve, 'image/jpeg', quality)
+      )
+      quality -= 0.05
+    } while (blob.size > 2 * 1024 * 1024 && quality > 0.4)
 
-      const url = URL.createObjectURL(blob)
+    const url = URL.createObjectURL(blob)
 
-      const baseName = tv.value.name
-  .replace(/:/g, '')          // 🔥 HAPUS TITIK DUA
-  .replace(/\s+/g, '')        // hapus spasi
-  .toLowerCase()
+    const baseName = tv.value.name
+      .replace(/:/g, '')
+      .replace(/\s+/g, '')
+      .toLowerCase()
 
+    const filename = `${baseName}_${index + 1}.jpg` // 🔥 FIX DI SINI
 
-      const filename = `${baseName}_${index}.jpg`
+    const link = document.createElement('a')
+    link.href = url
+    link.download = filename
+    link.click()
 
-      const link = document.createElement('a')
-      link.href = url
-      link.download = filename
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-
-      URL.revokeObjectURL(url)
-    }
-  } catch (err) {
-    console.error('Download gagal:', err)
+    URL.revokeObjectURL(url)
   }
 }
-
-
 
 </script>
 
