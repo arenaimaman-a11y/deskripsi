@@ -273,17 +273,19 @@ Thanks for visiting & watching.
 #tvseries #episodereview #seriesrecap #showbreakdown
 `.trim()
 
-  // =====================
-  // THUMBNAIL
-  // =====================
 // =====================
 // RANDOM THUMBNAIL (namaseries-1.jpg)
 // =====================
 const randomThumb = Math.floor(Math.random() * 3) + 1
 
-const thumbnail = `C:\\Users\\AsSaLamuaLaikuM\\Desktop\\thumb\\${name
-  .replace(/\s+/g, '')
-  .toLowerCase()}_${randomThumb}.jpg`
+const safeName = name
+  .toLowerCase()
+  .replace(/:/g, '')        // 🔥 hilangkan titik dua
+  .replace(/\s+/g, '')      // hapus spasi
+  .replace(/[^a-z0-9]/g, '') // ekstra aman (opsional tapi direkomendasikan)
+
+const thumbnail = `C:\\Users\\AsSaLamuaLaikuM\\Desktop\\thumb\\${safeName}_${randomThumb}.jpg`
+
 
 
 // =====================
@@ -436,13 +438,122 @@ async function downloadImage(index) {
   img.src = imgUrl
 
   img.onload = async () => {
+    // =====================
+    // FIX SIZE 720p
+    // =====================
     const canvas = document.createElement('canvas')
-    canvas.width = img.width
-    canvas.height = img.height
+    canvas.width = 1280
+    canvas.height = 720
 
     const ctx = canvas.getContext('2d')
-    ctx.drawImage(img, 0, 0)
 
+    // =====================
+    // DRAW IMAGE (COVER)
+    // =====================
+    const scale = Math.max(
+      canvas.width / img.width,
+      canvas.height / img.height
+    )
+
+    const x = (canvas.width - img.width * scale) / 2
+    const y = (canvas.height - img.height * scale) / 2
+
+    ctx.drawImage(
+      img,
+      x,
+      y,
+      img.width * scale,
+      img.height * scale
+    )
+
+// =====================
+// TEXT CTR (FIX PER INDEX)
+// =====================
+const streamTexts = [
+  'WATCH NOW',    // index 0 → Download 1
+  'FREE STREAM',  // index 1 → Download 2
+  'HD QUALITY'    // index 2 → Download 3
+]
+
+const text = streamTexts[index] || 'WATCH NOW'
+
+// =====================
+// FONT SETTING
+// =====================
+const fontSize = 72
+ctx.font = `900 ${fontSize}px Arial Black`
+ctx.textAlign = 'right'
+ctx.textBaseline = 'top'
+
+// =====================
+// POSITION (KANAN ATAS)
+// =====================
+const margin = 40
+const textX = canvas.width - margin
+const textY = margin
+
+// =====================
+// BACKGROUND BOX
+// =====================
+const paddingX = 28
+const paddingY = 18
+const metrics = ctx.measureText(text)
+
+const boxWidth = metrics.width + paddingX * 2
+const boxHeight = fontSize + paddingY * 2
+
+ctx.fillStyle = 'rgba(0,0,0,0.6)'
+ctx.fillRect(
+  textX - boxWidth,
+  textY,
+  boxWidth,
+  boxHeight
+)
+
+// =====================
+// WARNA PER TEXT (CTR)
+// =====================
+const colorMap = {
+  'WATCH NOW': '#FFD700',   // emas
+  'FREE STREAM': '#FFD700', // hijau
+  'HD QUALITY': '#FFD700'   // biru
+}
+
+ctx.fillStyle = colorMap[text] || '#FFD700'
+ctx.fillText(text, textX - paddingX, textY + paddingY)
+// =====================
+// BRANDING KECIL (KIRI BAWAH)
+// =====================
+const brandText = 'JUSTPLAY-TV.ONLINE'
+
+const brandFontSize = 26 // kecil & elegan
+ctx.font = `600 ${brandFontSize}px Arial`
+ctx.textAlign = 'left'
+ctx.textBaseline = 'bottom'
+
+const brandMargin = 30
+const brandX = brandMargin
+const brandY = canvas.height - brandMargin
+
+// shadow tipis biar kebaca
+ctx.shadowColor = 'rgba(0,0,0,0.7)'
+ctx.shadowBlur = 4
+ctx.shadowOffsetX = 2
+ctx.shadowOffsetY = 2
+
+ctx.fillStyle = '#FFFFFF'
+ctx.fillText(brandText, brandX, brandY)
+
+// reset shadow biar nggak ngaruh ke elemen lain
+ctx.shadowColor = 'transparent'
+ctx.shadowBlur = 0
+ctx.shadowOffsetX = 0
+ctx.shadowOffsetY = 0
+
+
+    // =====================
+    // COMPRESS < 2MB
+    // =====================
     let quality = 0.9
     let blob
 
@@ -455,12 +566,15 @@ async function downloadImage(index) {
 
     const url = URL.createObjectURL(blob)
 
+    // =====================
+    // FILE NAME
+    // =====================
     const baseName = tv.value.name
       .replace(/:/g, '')
       .replace(/\s+/g, '')
       .toLowerCase()
 
-    const filename = `${baseName}_${index + 1}.jpg` // 🔥 FIX DI SINI
+    const filename = `${baseName}_${index + 1}.jpg`
 
     const link = document.createElement('a')
     link.href = url
