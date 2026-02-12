@@ -1,10 +1,13 @@
 <script setup>
+import { useRoute, useRouter } from 'vue-router'
 import { ref, computed, watch, onMounted } from 'vue'
 
 /* =====================
    ROUTE & CONFIG
 ===================== */
+const randomThumbIndex = ref(0)
 const route = useRoute()
+const router = useRouter()
 const config = useRuntimeConfig()
 const tvId = route.query.id
 const DOMAIN = 'https://www.justplay-tv.online'
@@ -31,7 +34,17 @@ const titleIndex = ref(0)
 
 const allImages = ref([])
 const mainImage = ref('')
-
+// =====================
+// RANDOM THUMB INDEX (FOR SELENIUM)
+// =====================
+watch(
+  landscapeImages,
+  (imgs) => {
+    if (!imgs || imgs.length === 0) return
+    randomThumbIndex.value = Math.floor(Math.random() * imgs.length)
+  },
+  { immediate: true }
+)
 /* =====================
    FLAG (ANTI RESET)
 ===================== */
@@ -71,9 +84,16 @@ function formatFullDate(date) {
   })
 }
 const mainHashtag = computed(() => {
-  if (!tv.value) return ''
-  return `${tv.value.name.replace(/\s+/g, '').toLowerCase()}.mp4`
+  if (!tv.value || !selectedSeason.value || !selectedEpisode.value) return ''
+
+  const slug = tv.value.name
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9-]/g, '')
+
+  return `https://justplay-tv.online/tv?id=${tvId}&season=${selectedSeason.value}&episode=${selectedEpisode.value}`
 })
+
 
 /* =====================
    LOAD ALL IMAGES
@@ -90,13 +110,26 @@ if (tvId) {
    RESTORE STATE
 ===================== */
 onMounted(() => {
-  const saved = localStorage.getItem(`tv_state_${tvId}`)
-  if (saved) {
-    const s = JSON.parse(saved)
-    selectedSeason.value = s.season
-    selectedEpisode.value = s.episode
+  // 🔹 PRIORITAS 1: URL
+  if (route.query.season) {
+    selectedSeason.value = Number(route.query.season)
   }
 
+  if (route.query.episode) {
+    selectedEpisode.value = Number(route.query.episode)
+  }
+
+  // 🔹 PRIORITAS 2: localStorage
+  if (!selectedSeason.value || !selectedEpisode.value) {
+    const saved = localStorage.getItem(`tv_state_${tvId}`)
+    if (saved) {
+      const s = JSON.parse(saved)
+      selectedSeason.value ||= s.season
+      selectedEpisode.value ||= s.episode
+    }
+  }
+
+  // 🔹 PRIORITAS 3: default season terbaru
   if (!selectedSeason.value && seasonList.value.length) {
     const today = new Date()
     const released = seasonList.value.filter(
@@ -109,6 +142,7 @@ onMounted(() => {
 
   isRestored.value = true
 })
+
 
 /* =====================
    LOAD SEASON DATA
@@ -145,13 +179,18 @@ watch(
   () => [selectedSeason.value, selectedEpisode.value],
   ([s, e]) => {
     if (!isRestored.value) return
-    if (!s || !e) return
-    localStorage.setItem(
-      `tv_state_${tvId}`,
-      JSON.stringify({ season: s, episode: e })
-    )
+    if (!tvId || !s || !e) return
+
+    router.replace({
+      query: {
+        id: tvId,
+        season: s,
+        episode: e
+      }
+    })
   }
 )
+
 
 /* =====================
    EPISODE DATA
@@ -291,6 +330,21 @@ const thumbnail = `C:\\Users\\AsSaLamuaLaikuM\\Desktop\\thumb\\${safeName}_${ran
 // =====================
 // CUSTOM LINK FORMAT
 // =====================
+const seleniumComment = computed(() => {
+  if (!tv.value || !selectedSeason.value || !selectedEpisode.value) return ''
+
+  const name = tv.value.name
+  const s = selectedSeason.value
+  const e = selectedEpisode.value
+
+  const slug = name
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9-]/g, '')
+
+  return `${name} S${s} E${e}: https://justplay-tv.online/tv/${tvId}/${slug}-S${s}-E${e}`
+})
+
 const slug = name
   .toLowerCase()
   .replace(/\s+/g, '-')
@@ -638,6 +692,10 @@ ctx.shadowOffsetY = 0
 <div v-if="episodeData" class="box">
   <label>Judul YouTube SEO (US)</label>
 
+<textarea id="yt-title" :value="youtubeTitle" readonly></textarea>
+<textarea id="yt-description" :value="youtubeDescription" readonly></textarea>
+<textarea id="yt-url" :value="mainHashtag" readonly></textarea>
+
   <div class="two-col">
     <!-- KOLOM KIRI -->
     <textarea
@@ -703,6 +761,35 @@ ctx.shadowOffsetY = 0
 </div>
     </div>
   </div>
+  <!-- =====================
+     SELENIUM READ ONLY
+===================== -->
+<div v-if="tv && landscapeImages.length" style="display:none">
+
+  <!-- POSTER -->
+  <img
+    id="selenium-poster"
+    :src="poster"
+    alt="poster"
+  />
+
+  <!-- LANDSCAPE THUMBNAILS -->
+  <img
+    v-for="(img, i) in landscapeImages"
+    :key="'selenium-' + i"
+    :id="`selenium-thumb-${i+1}`"
+    :src="img"
+    alt="thumbnail"
+  />
+
+</div>
+<!-- COMMENT LINK (SELENIUM) -->
+<textarea
+  id="selenium-comment"
+  :value="seleniumComment"
+  readonly
+></textarea>
+
 </template>
 
 <style scoped>
