@@ -533,55 +533,72 @@ async function downloadImage(index) {
       img.height * scale
     )
 /* =====================
-   PREMIUM CENTER LAYOUT
+   TOP LEFT PREMIUM
 ===================== */
 
-const title = tv.value?.name?.toUpperCase() || ''
 const season = selectedSeason.value
 const episode = selectedEpisode.value
-
 const topText = `S${season} EP${episode}`
-const bottomText = title
 
-ctx.textAlign = 'center'
+// RANDOM HOOK
+const hooks = [
+  'SHOCKING TWIST',
+  'YOU WON’T EXPECT THIS',
+  'THE TRUTH REVEALED',
+  'BIG REVEAL',
+  'INTENSE MOMENT',
+  'MAJOR CLIFFHANGER',
+  'THIS CHANGES EVERYTHING',
+  'FINAL WARNING',
+  'UNBELIEVABLE ENDING'
+]
+
+const randomHook = hooks[Math.floor(Math.random() * hooks.length)]
+
+// POSISI KIRI ATAS
+ctx.textAlign = 'left'
 ctx.textBaseline = 'top'
 
-const centerX = canvas.width / 2
-let textY = canvas.height * 0.60  // posisi cinematic agak bawah
+const padding = 40
+const leftX = padding
+let textY = padding
 
-// ===== S EP (KECIL) =====
+// ===== S EP =====
 ctx.font = `800 42px Impact`
 ctx.lineWidth = 6
-ctx.strokeStyle = '#000000'
+ctx.strokeStyle = '#000'
 ctx.shadowColor = 'rgba(0,0,0,0.8)'
 ctx.shadowBlur = 12
 
-ctx.strokeText(topText, centerX, textY)
+ctx.strokeText(topText, leftX, textY)
 
-let gradTop = ctx.createLinearGradient(0, textY, 0, textY + 60)
-gradTop.addColorStop(0, '#ffffff')
-gradTop.addColorStop(1, '#ff9900')
+const goldGrad1 = ctx.createLinearGradient(0, textY, 0, textY + 50)
+goldGrad1.addColorStop(0, '#fff8dc')
+goldGrad1.addColorStop(0.5, '#ffd700')
+goldGrad1.addColorStop(1, '#b8860b')
 
-ctx.fillStyle = gradTop
-ctx.fillText(topText, centerX, textY)
+ctx.fillStyle = goldGrad1
+ctx.fillText(topText, leftX, textY)
 
-
-// ===== TITLE (LEBIH BESAR) =====
+// ===== HOOK =====
 textY += 60
 
-ctx.font = `900 75px Impact`
+ctx.font = `900 68px Impact`
 ctx.lineWidth = 10
-ctx.strokeStyle = '#000000'
-ctx.shadowBlur = 20
+ctx.strokeStyle = '#000'
+ctx.shadowColor = 'rgba(0,0,0,0.9)'
+ctx.shadowBlur = 25
 
-ctx.strokeText(bottomText, centerX, textY)
+ctx.strokeText(randomHook, leftX, textY)
 
-let gradBottom = ctx.createLinearGradient(0, textY, 0, textY + 100)
-gradBottom.addColorStop(0, '#FFD700')
-gradBottom.addColorStop(1, '#ff0000')
+const goldGrad2 = ctx.createLinearGradient(0, textY - 40, 0, textY + 80)
+goldGrad2.addColorStop(0, '#fff8dc')
+goldGrad2.addColorStop(0.3, '#ffd700')
+goldGrad2.addColorStop(0.6, '#ffb700')
+goldGrad2.addColorStop(1, '#b8860b')
 
-ctx.fillStyle = gradBottom
-ctx.fillText(bottomText, centerX, textY)
+ctx.fillStyle = goldGrad2
+ctx.fillText(randomHook, leftX, textY)
 
 ctx.shadowBlur = 0
 
