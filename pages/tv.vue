@@ -315,14 +315,11 @@ Thanks for visiting & watching.
 // =====================
 // RANDOM THUMBNAIL (namaseries-1.jpg)
 // =====================
-const randomThumb = Math.floor(Math.random() * 3) + 1
+const randomThumb = Math.floor(Math.random() * 5) + 1
 
 const safeName = name
   .toLowerCase()
-  .replace(/:/g, '')        // 🔥 hilangkan titik dua
-  .replace(/\s+/g, '')      // hapus spasi
-  .replace(/[^a-z0-9]/g, '') // ekstra aman (opsional tapi direkomendasikan)
-
+  .replace(/[^a-z0-9]/g, '')
 const thumbnail = `C:\\Users\\AsSaLamuaLaikuM\\Desktop\\thumb\\${safeName}_${randomThumb}.jpg`
 
 
@@ -435,10 +432,20 @@ function copy(text) {
 ===================== */
 function pickRandomImages () {
   if (!Array.isArray(allImages.value)) return
-  if (allImages.value.length < 3) return
+  if (allImages.value.length < 5) return
 
-  const shuffled = [...allImages.value].sort(() => 0.5 - Math.random())
-  const selected = shuffled.slice(0, 3)
+  const unique = new Set()
+  const selected = []
+
+  while (selected.length < 5) {
+    const randIndex = Math.floor(Math.random() * allImages.value.length)
+    const img = allImages.value[randIndex]
+
+    if (!unique.has(img.file_path)) {
+      unique.add(img.file_path)
+      selected.push(img)
+    }
+  }
 
   landscapeImages.value = selected.map(r => {
     const original = 'https://image.tmdb.org/t/p/original' + r.file_path
@@ -467,17 +474,30 @@ async function convertPosterToJPG() {
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    ctx.drawImage(img, 0, 0)
+  // Blur background dulu
+  ctx.filter = 'blur(6px)'
+  ctx.drawImage(
+    img,
+    x,
+    y,
+    img.width * scale,
+    img.height * scale
+  )
 
-    canvas.toBlob(
-      (blob) => {
-        if (blob) posterJPG.value = URL.createObjectURL(blob)
-      },
-      'image/jpeg',
-      0.95
-    )
+  // Gambar lagi versi normal di atasnya (biar tidak terlalu blur)
+  ctx.filter = 'none'
+  ctx.drawImage(
+    img,
+    x,
+    y,
+    img.width * scale,
+    img.height * scale
+  )
+
   }
 }
+
+
 // =====================
 // DOWNLOAD IMAGE < 2MB (AUTO COMPRESS)
 // =====================
@@ -492,18 +512,11 @@ async function downloadImage(index) {
   img.src = imgUrl
 
   img.onload = async () => {
-    // =====================
-    // FIX SIZE 720p
-    // =====================
     const canvas = document.createElement('canvas')
     canvas.width = 1280
     canvas.height = 720
-
     const ctx = canvas.getContext('2d')
 
-    // =====================
-    // DRAW IMAGE (COVER)
-    // =====================
     const scale = Math.max(
       canvas.width / img.width,
       canvas.height / img.height
@@ -519,95 +532,73 @@ async function downloadImage(index) {
       img.width * scale,
       img.height * scale
     )
+/* =====================
+   PREMIUM CENTER LAYOUT
+===================== */
 
-// =====================
-// TEXT CTR (FIX PER INDEX)
-// =====================
-const streamTexts = [
-  'WATCH NOW',    // index 0 → Download 1
-  'FREE STREAM',  // index 1 → Download 2
-  'HD QUALITY'    // index 2 → Download 3
-]
+const title = tv.value?.name?.toUpperCase() || ''
+const season = selectedSeason.value
+const episode = selectedEpisode.value
 
-const text = streamTexts[index] || 'WATCH NOW'
+const topText = `S${season} EP${episode}`
+const bottomText = title
 
-// =====================
-// FONT SETTING
-// =====================
-const fontSize = 72
-ctx.font = `900 ${fontSize}px Arial Black`
-ctx.textAlign = 'right'
+ctx.textAlign = 'center'
 ctx.textBaseline = 'top'
 
-// =====================
-// POSITION (KANAN ATAS)
-// =====================
-const margin = 40
-const textX = canvas.width - margin
-const textY = margin
+const centerX = canvas.width / 2
+let textY = canvas.height * 0.60  // posisi cinematic agak bawah
 
-// =====================
-// BACKGROUND BOX
-// =====================
-const paddingX = 28
-const paddingY = 18
-const metrics = ctx.measureText(text)
+// ===== S EP (KECIL) =====
+ctx.font = `800 42px Impact`
+ctx.lineWidth = 6
+ctx.strokeStyle = '#000000'
+ctx.shadowColor = 'rgba(0,0,0,0.8)'
+ctx.shadowBlur = 12
 
-const boxWidth = metrics.width + paddingX * 2
-const boxHeight = fontSize + paddingY * 2
+ctx.strokeText(topText, centerX, textY)
 
-ctx.fillStyle = 'rgba(0,0,0,0.6)'
-ctx.fillRect(
-  textX - boxWidth,
-  textY,
-  boxWidth,
-  boxHeight
-)
+let gradTop = ctx.createLinearGradient(0, textY, 0, textY + 60)
+gradTop.addColorStop(0, '#ffffff')
+gradTop.addColorStop(1, '#ff9900')
 
-// =====================
-// WARNA PER TEXT (CTR)
-// =====================
-const colorMap = {
-  'WATCH NOW': '#FFD700',   // emas
-  'FREE STREAM': '#FFD700', // hijau
-  'HD QUALITY': '#FFD700'   // biru
-}
+ctx.fillStyle = gradTop
+ctx.fillText(topText, centerX, textY)
 
-ctx.fillStyle = colorMap[text] || '#FFD700'
-ctx.fillText(text, textX - paddingX, textY + paddingY)
-// =====================
-// BRANDING KECIL (KIRI BAWAH)
-// =====================
-const brandText = 'JUSTPLAY-TV.ONLINE'
 
-const brandFontSize = 26 // kecil & elegan
-ctx.font = `600 ${brandFontSize}px Arial`
-ctx.textAlign = 'left'
-ctx.textBaseline = 'bottom'
+// ===== TITLE (LEBIH BESAR) =====
+textY += 60
 
-const brandMargin = 30
-const brandX = brandMargin
-const brandY = canvas.height - brandMargin
+ctx.font = `900 75px Impact`
+ctx.lineWidth = 10
+ctx.strokeStyle = '#000000'
+ctx.shadowBlur = 20
 
-// shadow tipis biar kebaca
-ctx.shadowColor = 'rgba(0,0,0,0.7)'
-ctx.shadowBlur = 4
-ctx.shadowOffsetX = 2
-ctx.shadowOffsetY = 2
+ctx.strokeText(bottomText, centerX, textY)
 
-ctx.fillStyle = '#FFFFFF'
-ctx.fillText(brandText, brandX, brandY)
+let gradBottom = ctx.createLinearGradient(0, textY, 0, textY + 100)
+gradBottom.addColorStop(0, '#FFD700')
+gradBottom.addColorStop(1, '#ff0000')
 
-// reset shadow biar nggak ngaruh ke elemen lain
-ctx.shadowColor = 'transparent'
+ctx.fillStyle = gradBottom
+ctx.fillText(bottomText, centerX, textY)
+
 ctx.shadowBlur = 0
-ctx.shadowOffsetX = 0
-ctx.shadowOffsetY = 0
 
 
-    // =====================
-    // COMPRESS < 2MB
-    // =====================
+    /* =====================
+       BRANDING
+    ===================== */
+    const brandText = 'JUSTPLAY-TV.ONLINE'
+    ctx.font = `600 26px Arial`
+    ctx.textAlign = 'left'
+    ctx.textBaseline = 'bottom'
+    ctx.fillStyle = '#FFFFFF'
+    ctx.fillText(brandText, 30, canvas.height - 30)
+
+    /* =====================
+       COMPRESS <2MB
+    ===================== */
     let quality = 0.9
     let blob
 
@@ -620,15 +611,16 @@ ctx.shadowOffsetY = 0
 
     const url = URL.createObjectURL(blob)
 
-    // =====================
-    // FILE NAME
-    // =====================
+    /* =====================
+       CLEAN TITLE (NO SPACE, NO SYMBOL)
+    ===================== */
     const baseName = tv.value.name
-      .replace(/:/g, '')
-      .replace(/\s+/g, '')
-      .toLowerCase()
+  .toLowerCase()
+  .replace(/[^a-z0-9]/gi, '') // hanya huruf & angka
+  .replace(/\s+/g, '')       // hilangkan spasi
 
-    const filename = `${baseName}_${index + 1}.jpg`
+const filename = `${baseName}_${index + 1}.jpg`
+
 
     const link = document.createElement('a')
     link.href = url
@@ -638,6 +630,7 @@ ctx.shadowOffsetY = 0
     URL.revokeObjectURL(url)
   }
 }
+
 
 </script>
 
@@ -686,32 +679,15 @@ ctx.shadowOffsetY = 0
   <button @click="downloadImage(0)">Download Thumb 1</button>
   <button @click="downloadImage(1)">Download Thumb 2</button>
   <button @click="downloadImage(2)">Download Thumb 3</button>
+  <button @click="downloadImage(3)">Download Thumb 4</button>
+  <button @click="downloadImage(4)">Download Thumb 5</button>
 </div>
 
 
 <div v-if="episodeData" class="box">
-  <label>Judul YouTube SEO (US)</label>
-
 <textarea id="yt-title" :value="youtubeTitle" readonly></textarea>
 <textarea id="yt-description" :value="youtubeDescription" readonly></textarea>
 <textarea id="yt-url" :value="mainHashtag" readonly></textarea>
-
-  <div class="two-col">
-    <!-- KOLOM KIRI -->
-    <textarea
-      rows="2"
-      :value="youtubeTitle"
-      readonly
-    />
-
-    <!-- KOLOM KANAN -->
-    <textarea
-      rows="2"
-      :value="mainHashtag"
-      readonly
-    />
-  </div>
-
   <div class="actions">
     <button @click="randomYoutubeTitle">🎲 Random</button>
     <button @click="copy(youtubeTitle)">📋 Copy Judul</button>
