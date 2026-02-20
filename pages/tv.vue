@@ -313,15 +313,20 @@ Thanks for visiting & watching.
 `.trim()
 
 // =====================
-// RANDOM THUMBNAIL (namaseries-1.jpg)
+// 5 THUMBNAILS PATH (UNTUK CSV)
 // =====================
-const randomThumb = Math.floor(Math.random() * 5) + 1
-
 const safeName = name
   .toLowerCase()
   .replace(/[^a-z0-9]/g, '')
-const thumbnail = `C:\\Users\\AsSaLamuaLaikuM\\Desktop\\thumb\\${safeName}_${randomThumb}.jpg`
 
+// Membuat 5 path sekaligus: _1.jpg, _2.jpg, dst.
+const thumbPaths = []
+for (let i = 1; i <= 5; i++) {
+  thumbPaths.push(`C:\\Users\\AsSaLamuaLaikuM\\Desktop\\thumb\\${safeName}_s${s}_e${e}_${i}.jpg`)
+}
+
+// Gabungkan kelima path dengan koma agar jadi 5 kolom di CSV
+const thumbnail = thumbPaths.join(',')
 
 
 // =====================
@@ -542,14 +547,23 @@ const topText = `S${season} EP${episode}`
 
 // RANDOM HOOK
 const hooks = [
+  // Original & Strong
   'SHOCKING TWIST',
-  'YOU WON’T EXPECT THIS',
   'THE TRUTH REVEALED',
-  'BIG REVEAL',
-  'INTENSE MOMENT',
-  'MAJOR CLIFFHANGER',
   'THIS CHANGES EVERYTHING',
-  'FINAL WARNING',
+  
+  // High CTR US Style
+  'BEST EPISODE YET',
+  'EVERYONE MISSED THIS',
+  'HEARTBREAKING MOMENT',
+  'WHO SURVIVED?',
+  'THE ULTIMATE BETRAYAL',
+  'FAN THEORY CONFIRMED',
+  'PURE INSANITY',
+  'NO ONE IS SAFE',
+  'THE FINAL GOODBYE',
+  'WATCH TILL THE END',
+  'TOTAL GAME CHANGER',
   'UNBELIEVABLE ENDING'
 ]
 
@@ -636,7 +650,12 @@ ctx.shadowBlur = 0
   .replace(/[^a-z0-9]/gi, '') // hanya huruf & angka
   .replace(/\s+/g, '')       // hilangkan spasi
 
-const filename = `${baseName}_${index + 1}.jpg`
+// Ambil data season dan episode saat ini
+const s = selectedSeason.value
+const e = selectedEpisode.value
+
+// Gabungkan menjadi format: namaserial_s1_e1_index.jpg
+const filename = `${baseName}_s${s}_e${e}_${index + 1}.jpg`
 
 
     const link = document.createElement('a')
