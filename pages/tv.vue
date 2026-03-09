@@ -322,7 +322,7 @@ const safeName = name
 // Membuat 5 path sekaligus: _1.jpg, _2.jpg, dst.
 const thumbPaths = []
 for (let i = 1; i <= 5; i++) {
-  thumbPaths.push(`C:\\Users\\AsSaLamuaLaikuM\\Desktop\\thumb\\${safeName}_s${s}_e${e}_${i}.jpg`)
+  thumbPaths.push(`C:\\Users\\\Administrator\\Desktop\\thumb\\${safeName}_s${s}_e${e}_${i}.jpg`)
 }
 
 // Gabungkan kelima path dengan koma agar jadi 5 kolom di CSV
