@@ -91,7 +91,7 @@ const mainHashtag = computed(() => {
     .replace(/\s+/g, '-')
     .replace(/[^a-z0-9-]/g, '')
 
-  return `https://justplay-tv.online/tv?id=${tvId}&season=${selectedSeason.value}&episode=${selectedEpisode.value}`
+  return `https://go.justplay-tv.online/tv?id=${tvId}/${selectedSeason.value}/${selectedEpisode.value}`
 })
 
 
