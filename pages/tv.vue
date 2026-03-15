@@ -344,7 +344,7 @@ const seleniumComment = computed(() => {
     .replace(/\s+/g, '-')
     .replace(/[^a-z0-9-]/g, '')
 
-  return `${name} S${s} E${e}: https://justplay-tv.online/tv/${tvId}/${slug}-S${s}-E${e}`
+  return `${name} S${s} E${e}: https://go.justplay-tv.online/tv/${tvId}/${s}/${e}`
 })
 
 const slug = name
@@ -352,7 +352,7 @@ const slug = name
   .replace(/\s+/g, '-')
   .replace(/[^a-z0-9-]/g, '')
 
-const comment = `${name} S${s} E${e}: http://justplay-tv.online/tv/${tvId}/${slug}-S${s}-E${e}`
+const comment = `${name} S${s} E${e}: https://go.justplay-tv.online/tv/${tvId}/${s}/${e}`
 
 
   // =====================
