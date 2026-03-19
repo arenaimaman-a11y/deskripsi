@@ -422,7 +422,7 @@ const episodeLink = computed(() => {
 const episodeLinkOriginal = computed(() => {
   if (!tvId || !selectedSeason.value || !selectedEpisode.value) return ''
 
-  return `${tv.value.name} S${selectedSeason.value} E${selectedEpisode.value}: https://justplay-tv.online/tv/${tvId}/${slug.value}-S${selectedSeason.value}-E${selectedEpisode.value}`
+  return `${tv.value.name} S${selectedSeason.value} E${selectedEpisode.value}: https://justplay-tv.online/tv/${tvId}/${selectedSeason.value}/${selectedEpisode.value}}`
 })
 
 
