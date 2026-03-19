@@ -91,7 +91,7 @@ const mainHashtag = computed(() => {
     .replace(/\s+/g, '-')
     .replace(/[^a-z0-9-]/g, '')
 
-  return `https://go.justplay-tv.online/tv?id=${tvId}/${selectedSeason.value}/${selectedEpisode.value}`
+  return `https://justplay-tv.online/tv?id=${tvId}/${selectedSeason.value}/${selectedEpisode.value}`
 })
 
 
@@ -344,7 +344,7 @@ const seleniumComment = computed(() => {
     .replace(/\s+/g, '-')
     .replace(/[^a-z0-9-]/g, '')
 
-  return `${name} S${s} E${e}: https://go.justplay-tv.online/tv/${tvId}/${s}/${e}`
+  return `${name} S${s} E${e}: https://justplay-tv.online/tv/${tvId}/${s}/${e}`
 })
 
 const slug = name
@@ -352,7 +352,7 @@ const slug = name
   .replace(/\s+/g, '-')
   .replace(/[^a-z0-9-]/g, '')
 
-const comment = `${name} S${s} E${e}: https://go.justplay-tv.online/tv/${tvId}/${s}/${e}`
+const comment = `${name} S${s} E${e}: https://justplay-tv.online/tv/${tvId}/${s}/${e}`
 
 
   // =====================
@@ -416,7 +416,7 @@ const slug = computed(() =>
 const episodeLink = computed(() => {
   if (!slug.value || !selectedSeason.value || !selectedEpisode.value) return ''
 
-  return `${tv.value.name} S${selectedSeason.value} E${selectedEpisode.value}: https://go.justplay-tv.online/tv/${tvId}/${selectedSeason.value}/${selectedEpisode.value}`
+  return `${tv.value.name} S${selectedSeason.value} E${selectedEpisode.value}: https://justplay-tv.online/tv/${tvId}/${selectedSeason.value}/${selectedEpisode.value}`
 })
 
 const episodeLinkOriginal = computed(() => {
