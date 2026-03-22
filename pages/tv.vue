@@ -344,7 +344,7 @@ const seleniumComment = computed(() => {
     .replace(/\s+/g, '-')
     .replace(/[^a-z0-9-]/g, '')
 
-  return `${name} S${s} E${e}: https://justplay-tv.online/tv/${tvId}/${s}/${e}`
+  return `${name} S${s} E${e}: https://justplay-tv.online/tv/${tvId}/${safeName}/${s}/${e}`
 })
 
 const slug = name
