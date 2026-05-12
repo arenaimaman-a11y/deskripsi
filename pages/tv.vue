@@ -291,7 +291,7 @@ const customDescription = computed(() => {
   // DESCRIPTION
   // =====================
   const description = `
-🎬 Watch ${name} - Season ${s} Episode ${e} Full Episode
+Watch ${name} - Season ${s} Episode ${e} Full Episode
 
 ${name} S${s}E${e} HD
 ${name} S${s} E${e} Full HD
