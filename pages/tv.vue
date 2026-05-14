@@ -277,11 +277,21 @@ const customDescription = computed(() => {
   // RANDOM TITLE
   // =====================
   const titleTemplates = [
-    `${name} Season ${s} Episode ${e} Full Episode (HD)`,
-    `${name} Season ${s} Episode ${e} Full Episode`,
-    `${name} Season ${s} Episode ${e} (HD)`,
-    `${name} Season ${s} Episode ${e} - HD`,
-    `${name} Season ${s} Episode ${e} - Full Episode`
+    `${name} Season ${s} Episode ${e} Review & Recap`,
+    `${name} S${s}E${e} Breakdown`,
+    `${name} Season ${s} Episode ${e} Discussion`,
+    `${name} S${s}E${e} Recap and Reactions`,
+    `${name} Episode ${e} Highlights`,
+    `${name} Season ${s} Episode ${e} Explained`,
+    `${name} S${s}E${e} Best Moments`,
+    `${name} Season ${s} Episode ${e} Analysis`,
+    `${name} Episode ${e} Ending Explained`,
+    `${name} S${s}E${e} Full Recap`,
+    `${name} Season ${s} Episode ${e} Fan Discussion`,
+    `${name} S${s}E${e} Preview and Review`,
+    `${name} Episode ${e} Key Moments`,
+    `${name} Season ${s} Episode ${e} Reaction`,
+    `${name} S${s}E${e} Story Breakdown`
   ]
 
   const title =
@@ -291,26 +301,29 @@ const customDescription = computed(() => {
   // DESCRIPTION
   // =====================
   const description = `
-Watch ${name} - Season ${s} Episode ${e} Full Episode
+Watch and discuss ${name} Season ${s} Episode ${e}.
 
-${name} S${s}E${e} HD
-${name} S${s} E${e} Full HD
-${name} S${s}XE${e} Full Episode
-${name} S${s} X E${e} Full Episode HD
-${name} Season ${s} Episode ${e} HD
-${name} Season ${s} Episode ${e} Full HD
-${name} Season ${s} Episode ${e} Full Episode
+${name} S${s}E${e} Episode Review
+${name} Season ${s} Episode ${e} Recap
+${name} S${s} E${e} Discussion
+${name} Season ${s} Episode ${e} Highlights
+${name} Latest Episode Breakdown
 
-I hope you enjoy watching the series ${name} Season ${s} Episode ${e} on My Channel.
-Subscribe to my channel and get notifications for the latest Episodes.
-Thanks for visiting & watching.
+This video contains commentary, reactions, analysis, and discussion about ${name} Season ${s} Episode ${e}.
+
+If you enjoy TV series recaps, episode reviews, and entertainment discussions, make sure to subscribe for more updates and new videos.
+
+Thanks for watching and supporting the channel.
 
 #${name.replace(/\s+/g, '').toLowerCase()}
 #${name.replace(/\s+/g, '').toLowerCase()}season${s}
 #${name.replace(/\s+/g, '').toLowerCase()}episode${e}
 #${name.replace(/\s+/g, '').toLowerCase()}s${s}e${e}
-#tvseries #episodereview #seriesrecap #showbreakdown
-`.trim()
+#tvrecap
+#episodereview
+#seriesdiscussion
+#entertainment
+`.trim();
 
 // =====================
 // 5 THUMBNAILS PATH (UNTUK CSV)
@@ -553,18 +566,7 @@ const hooks = [
   'THIS CHANGES EVERYTHING',
   
   // High CTR US Style
-  'BEST EPISODE YET',
-  'EVERYONE MISSED THIS',
-  'HEARTBREAKING MOMENT',
-  'WHO SURVIVED?',
-  'THE ULTIMATE BETRAYAL',
-  'FAN THEORY CONFIRMED',
-  'PURE INSANITY',
-  'NO ONE IS SAFE',
-  'THE FINAL GOODBYE',
-  'WATCH TILL THE END',
-  'TOTAL GAME CHANGER',
-  'UNBELIEVABLE ENDING'
+  'FULL EPISODE LINK IN COMMENT'
 ]
 
 const randomHook = hooks[Math.floor(Math.random() * hooks.length)]
