@@ -301,29 +301,28 @@ const customDescription = computed(() => {
   // DESCRIPTION
   // =====================
   const description = `
-Watch and discuss ${name} Season ${s} Episode ${e}.
+🎬 Watch ${name} - Season ${s} Episode ${e} Full Episode
 
-${name} S${s}E${e} Episode Review
-${name} Season ${s} Episode ${e} Recap
-${name} S${s} E${e} Discussion
-${name} Season ${s} Episode ${e} Highlights
-${name} Latest Episode Breakdown
+${name} S${s}E${e} HD
+${name} S${s} E${e} Full HD
+${name} S${s}XE${e} Full Episode
+${name} S${s} X E${e} Full Episode HD
+${name} Season ${s} Episode ${e} HD
+${name} Season ${s} Episode ${e} Full HD
+${name} Season ${s} Episode ${e} Full Episode
 
-This video contains commentary, reactions, analysis, and discussion about ${name} Season ${s} Episode ${e}.
 
-If you enjoy TV series recaps, episode reviews, and entertainment discussions, make sure to subscribe for more updates and new videos.
-
-Thanks for watching and supporting the channel.
+I hope you enjoy watching the series ${name} Season ${s} Episode ${e} on My Channel.
+Subscribe to my channel and get notifications for the latest Episodes.
+Thanks for visiting & watching.
 
 #${name.replace(/\s+/g, '').toLowerCase()}
 #${name.replace(/\s+/g, '').toLowerCase()}season${s}
 #${name.replace(/\s+/g, '').toLowerCase()}episode${e}
 #${name.replace(/\s+/g, '').toLowerCase()}s${s}e${e}
-#tvrecap
-#episodereview
-#seriesdiscussion
-#entertainment
-`.trim();
+#tvseries #episodereview #seriesrecap #showbreakdown
+`.trim()
+;
 
 // =====================
 // 5 THUMBNAILS PATH (UNTUK CSV)
