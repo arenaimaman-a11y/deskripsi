@@ -278,20 +278,20 @@ const customDescription = computed(() => {
   // =====================
      const titleTemplates = [
      `${name} Season ${s} Episode ${e} Full HD`,
-     `${name} S${s}E${e} Full Episode`,
+     `${name} Season ${s} Episode ${e} Full Episode`,
      `${name} Season ${s} Episode ${e} Full Episode (HD)`,
-     `${name} S${s}E${e} Full HD`,
-     `${name} Episode ${e} Full Episode`,
-     `${name} Season ${s} Episode ${e} Full Episode (HD)`,
-     `${name} S${s}E${e} Full HD`,
-     `${name} Episode ${e} Full Episode`,
-     `${name} S${s}E${e} Full Episode (HD)`,
-     `${name} Season ${s} Episode ${e} Full HD`,
-     `${name} S${s}E${e} Full Episode`,
-     `${name} Episode ${e} Full Episode (HD)`,
-     `${name} Season ${s} Episode ${e} Full HD`,
-     `${name} S${s}E${e} Full Episode`,
-     `${name} Episode ${e} Full Episode (HD)`
+     `${name} Season ${s} Episode ${e} Watch Online`,
+     `${name} Season ${s} Episode ${e} Streaming Now`,
+     `${name} Season ${s} Episode ${e} HD Streaming`,
+     `${name} Season ${s} Episode ${e} Watch Full Movie`,
+     `${name} Season ${s} Episode ${e} Official Streaming`,
+     `${name} Season ${s} Episode ${e} Exclusive HD`,
+     `${name} Season ${s} Episode ${e} Premium Streaming`,
+     `${name} Season ${s} Episode ${e} Ultra HD`,
+     `${name} Season ${s} Episode ${e} Complete Episode`,
+     `${name} Season ${s} Episode ${e} Watch Now`,
+     `${name} Season ${s} Episode ${e} Online Free HD`,
+     `${name} Season ${s} Episode ${e} Full Streaming`
    ]
 
   const title =
