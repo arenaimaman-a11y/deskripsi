@@ -276,23 +276,23 @@ const customDescription = computed(() => {
   // =====================
   // RANDOM TITLE
   // =====================
-  const titleTemplates = [
-    `${name} Season ${s} Episode ${e} Review & Recap`,
-    `${name} S${s}E${e} Breakdown`,
-    `${name} Season ${s} Episode ${e} Discussion`,
-    `${name} S${s}E${e} Recap and Reactions`,
-    `${name} Episode ${e} Highlights`,
-    `${name} Season ${s} Episode ${e} Explained`,
-    `${name} S${s}E${e} Best Moments`,
-    `${name} Season ${s} Episode ${e} Analysis`,
-    `${name} Episode ${e} Ending Explained`,
-    `${name} S${s}E${e} Full Recap`,
-    `${name} Season ${s} Episode ${e} Fan Discussion`,
-    `${name} S${s}E${e} Preview and Review`,
-    `${name} Episode ${e} Key Moments`,
-    `${name} Season ${s} Episode ${e} Reaction`,
-    `${name} S${s}E${e} Story Breakdown`
-  ]
+     const titleTemplates = [
+     `${name} Season ${s} Episode ${e} Full HD`,
+     `${name} S${s}E${e} Full Episode`,
+     `${name} Season ${s} Episode ${e} Full Episode (HD)`,
+     `${name} S${s}E${e} Full HD`,
+     `${name} Episode ${e} Full Episode`,
+     `${name} Season ${s} Episode ${e} Full Episode (HD)`,
+     `${name} S${s}E${e} Full HD`,
+     `${name} Episode ${e} Full Episode`,
+     `${name} S${s}E${e} Full Episode (HD)`,
+     `${name} Season ${s} Episode ${e} Full HD`,
+     `${name} S${s}E${e} Full Episode`,
+     `${name} Episode ${e} Full Episode (HD)`,
+     `${name} Season ${s} Episode ${e} Full HD`,
+     `${name} S${s}E${e} Full Episode`,
+     `${name} Episode ${e} Full Episode (HD)`
+   ]
 
   const title =
     titleTemplates[Math.floor(Math.random() * titleTemplates.length)]
