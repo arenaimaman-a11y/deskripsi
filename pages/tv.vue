@@ -5,12 +5,10 @@ import { ref, computed, watch, onMounted } from 'vue'
 /* =====================
    ROUTE & CONFIG
 ===================== */
-const randomThumbIndex = ref(0)
 const route = useRoute()
 const router = useRouter()
 const config = useRuntimeConfig()
 const tvId = route.query.id
-const DOMAIN = 'https://www.justplay-tv.online'
 
 /* =====================
    STATE
@@ -18,40 +16,25 @@ const DOMAIN = 'https://www.justplay-tv.online'
 const tv = ref(null)
 const seasonList = ref([])
 const seasonData = ref(null)
-const posterJPG = ref('')
-const landscapeImages = ref([]) // isi 3 gambar berbeda
+const landscapeImages = ref([])
 
+const selectedSeason = ref(null)
+const selectedEpisode = ref(null)
+
+const youtubeTitle = ref('')
+const youtubeDescription = ref('')
+
+/* =====================
+   POSTER
+===================== */
 const poster = computed(() =>
   tv.value?.poster_path
     ? 'https://image.tmdb.org/t/p/original' + tv.value.poster_path
     : 'https://via.placeholder.com/150x210?text=No+Image'
 )
 
-const selectedSeason = ref(null)
-const selectedEpisode = ref(null)
-
-const titleIndex = ref(0)
-
-const allImages = ref([])
-const mainImage = ref('')
-// =====================
-// RANDOM THUMB INDEX (FOR SELENIUM)
-// =====================
-watch(
-  landscapeImages,
-  (imgs) => {
-    if (!imgs || imgs.length === 0) return
-    randomThumbIndex.value = Math.floor(Math.random() * imgs.length)
-  },
-  { immediate: true }
-)
 /* =====================
-   FLAG (ANTI RESET)
-===================== */
-const isRestored = ref(false)
-
-/* =====================
-   LOAD TV DETAIL
+   FETCH TV DETAIL
 ===================== */
 if (tvId) {
   const { data } = await useFetch(
@@ -65,16 +48,12 @@ if (tvId) {
   )
 
   tv.value = data.value
-  seasonList.value = data.value.seasons || []
-}
-function formatMonthYear(date) {
-  if (!date) return ''
-  return new Date(date).toLocaleDateString('en-US', {
-    month: 'short',
-    year: 'numeric'
-  })
+  seasonList.value = data.value?.seasons || []
 }
 
+/* =====================
+   FETCH IMAGES (FIXED)
+===================== */
 function formatFullDate(date) {
   if (!date) return ''
   return new Date(date).toLocaleDateString('en-US', {
@@ -83,69 +62,58 @@ function formatFullDate(date) {
     year: 'numeric'
   })
 }
-const mainHashtag = computed(() => {
-  if (!tv.value || !selectedSeason.value || !selectedEpisode.value) return ''
-
-  const slug = tv.value.name
-    .toLowerCase()
-    .replace(/\s+/g, '-')
-    .replace(/[^a-z0-9-]/g, '')
-
-  return `https://justplay-tv.online/tv?id=${tvId}/${selectedSeason.value}/${selectedEpisode.value}`
-})
-
-
-/* =====================
-   LOAD ALL IMAGES
-===================== */
 if (tvId) {
   const images = await $fetch(
     `https://api.themoviedb.org/3/tv/${tvId}/images`,
-    { query: { api_key: config.public.tmdbApiKey } }
+    {
+      query: { api_key: config.public.tmdbApiKey }
+    }
   )
-  allImages.value = images.backdrops || []
+
+  landscapeImages.value = (images.backdrops || []).map(img => {
+    const original =
+      'https://image.tmdb.org/t/p/original' + img.file_path
+
+    return (
+      'https://wsrv.nl/?url=' +
+      encodeURIComponent(original) +
+      '&format=jpg&n=-1&q=90'
+    )
+  })
 }
 
 /* =====================
-   RESTORE STATE
+   RESTORE STATE & AUTO-SELECT BY DATE
 ===================== */
 onMounted(() => {
-  // 🔹 PRIORITAS 1: URL
   if (route.query.season) {
     selectedSeason.value = Number(route.query.season)
+  } else if (seasonList.value.length > 0) {
+    const today = new Date()
+    
+    const releasedSeasons = seasonList.value.filter(s => {
+      if (s.season_number === 0) return false 
+      if (!s.air_date) return false
+      return new Date(s.air_date) <= today
+    })
+
+    if (releasedSeasons.length > 0) {
+      const latestSeason = releasedSeasons.reduce((max, s) => 
+        s.season_number > max.season_number ? s : max, releasedSeasons[0]
+      )
+      selectedSeason.value = latestSeason.season_number
+    } else {
+      selectedSeason.value = seasonList.value.at(-1)?.season_number || 1
+    }
   }
 
   if (route.query.episode) {
     selectedEpisode.value = Number(route.query.episode)
   }
-
-  // 🔹 PRIORITAS 2: localStorage
-  if (!selectedSeason.value || !selectedEpisode.value) {
-    const saved = localStorage.getItem(`tv_state_${tvId}`)
-    if (saved) {
-      const s = JSON.parse(saved)
-      selectedSeason.value ||= s.season
-      selectedEpisode.value ||= s.episode
-    }
-  }
-
-  // 🔹 PRIORITAS 3: default season terbaru
-  if (!selectedSeason.value && seasonList.value.length) {
-    const today = new Date()
-    const released = seasonList.value.filter(
-      s => s.air_date && new Date(s.air_date) <= today
-    )
-    selectedSeason.value =
-      released.at(-1)?.season_number ||
-      seasonList.value.at(-1)?.season_number
-  }
-
-  isRestored.value = true
 })
 
-
 /* =====================
-   LOAD SEASON DATA
+   LOAD SEASON DATA & AUTO-SELECT EPISODE
 ===================== */
 watch(selectedSeason, async (s) => {
   if (!s) return
@@ -163,34 +131,26 @@ watch(selectedSeason, async (s) => {
   seasonData.value = data
 
   if (!selectedEpisode.value) {
-    selectedEpisode.value =
-      data.episodes?.at(-1)?.episode_number || 1
-  }
-})
-
-watch(tv, (v) => {
-  if (v) convertPosterToJPG()
-})
-
-/* =====================
-   SAVE STATE
-===================== */
-watch(
-  () => [selectedSeason.value, selectedEpisode.value],
-  ([s, e]) => {
-    if (!isRestored.value) return
-    if (!tvId || !s || !e) return
-
-    router.replace({
-      query: {
-        id: tvId,
-        season: s,
-        episode: e
-      }
+    const today = new Date()
+    
+    const releasedEpisodes = (data.episodes || []).filter(e => {
+      if (!e.air_date) return false
+      return new Date(e.air_date) <= today
     })
-  }
-)
 
+    if (releasedEpisodes.length > 0) {
+      selectedEpisode.value = releasedEpisodes.at(-1).episode_number
+    } else {
+      selectedEpisode.value = data.episodes?.at(0)?.episode_number || 1
+    }
+  }
+})
+
+watch(selectedSeason, () => {
+  if (!route.query.episode) {
+    selectedEpisode.value = null
+  }
+})
 
 /* =====================
    EPISODE DATA
@@ -203,175 +163,30 @@ const episodeData = computed(() => {
 })
 
 /* =====================
-   BASIC SEO (SITE)
+   SEO TITLE
 ===================== */
-const seoKeywords = [
-  'Watch Online','Full Episode','HD','Free Streaming',
-  'Latest Episode','New Season'
-]
-
-const powerWords = [
-  'Must Watch','Explained','Big Twist','Final Scene','Shocking'
-]
-
-const aiTitles = computed(() => {
-  if (!tv.value || !episodeData.value) return []
-  return Array.from({ length: 100 }).map(() => {
-    const seo = seoKeywords[Math.floor(Math.random() * seoKeywords.length)]
-    const power = powerWords[Math.floor(Math.random() * powerWords.length)]
-    return `${tv.value.name} Season ${selectedSeason.value} Episode ${selectedEpisode.value} ${seo} – ${power}`
-  })
-})
-
-const titleText = computed(() => aiTitles.value[titleIndex.value] || '')
-
-function randomTitle () {
-  titleIndex.value = Math.floor(Math.random() * aiTitles.value.length)
-}
-
-/* =====================
-   YOUTUBE SEO (US) – STRONG & RANDOM
-===================== */
-const youtubeTitle = ref('')
-const youtubeDescription = ref('')
-
 const ytSuffixes = [
   'Full Episode (HD)',
   'Full Episodes',
-  'Full Episode HD',
   'Stream HD',
-  "Stream - (HD)",
-  '- (HD)'
+  'Watch Online'
 ]
 
-
-
-
-
-
-function rand(arr) {
-  return arr[Math.floor(Math.random() * arr.length)]
-}
-
-function randomYoutubeTitle () {
+function randomYoutubeTitle() {
   if (!tv.value || !episodeData.value) return
 
-  const suffix = ytSuffixes[Math.floor(Math.random() * ytSuffixes.length)]
+  const suffix =
+    ytSuffixes[Math.floor(Math.random() * ytSuffixes.length)]
 
   youtubeTitle.value =
     `${tv.value.name} Season ${selectedSeason.value} ` +
     `Episode ${selectedEpisode.value} ${suffix}`
 }
 
-// =====================
-// CUSTOM DESKRIPSI OTOMATIS
-// =====================
-const customDescription = computed(() => {
-  if (!tv.value || !episodeData.value) return ''
-
-  const name = tv.value.name
-  const s = selectedSeason.value
-  const e = selectedEpisode.value
-
-  // =====================
-  // RANDOM TITLE
-  // =====================
-     const titleTemplates = [
-     `${name} Season ${s} Episode ${e} Full HD`,
-     `${name} Season ${s} Episode ${e} Full Episode`,
-     `${name} Season ${s} Episode ${e} Streaming Now`,
-     `${name} Season ${s} Episode ${e} HD Streaming`,
-     `${name} Season ${s} Episode ${e} Watch Full Episodes`,
-     `${name} Season ${s} Episode ${e} Official Streaming`,
-     `${name} Season ${s} Episode ${e} Exclusive HD`,
-     `${name} Season ${s} Episode ${e} Premium Streaming`,
-     `${name} Season ${s} Episode ${e} Complete Episode`,
-     `${name} Season ${s} Episode ${e} Online Free HD`,
-     `${name} Season ${s} Episode ${e} Full Streaming`
-   ]
-
-  const title =
-    titleTemplates[Math.floor(Math.random() * titleTemplates.length)]
-
-  // =====================
-  // DESCRIPTION
-  // =====================
-  const description = `
-🎬 Watch ${name} - Season ${s} Episode ${e} Full Episode
-
-${name} S${s}E${e} HD
-${name} S${s} E${e} Full HD
-${name} S${s}XE${e} Full Episode
-${name} S${s} X E${e} Full Episode HD
-${name} Season ${s} Episode ${e} HD
-${name} Season ${s} Episode ${e} Full HD
-${name} Season ${s} Episode ${e} Full Episode
-
-
-I hope you enjoy watching the series ${name} Season ${s} Episode ${e} on My Channel.
-Subscribe to my channel and get notifications for the latest Episodes.
-Thanks for visiting & watching.
-
-#${name.replace(/\s+/g, '').toLowerCase()}
-#${name.replace(/\s+/g, '').toLowerCase()}season${s}
-#${name.replace(/\s+/g, '').toLowerCase()}episode${e}
-#${name.replace(/\s+/g, '').toLowerCase()}s${s}e${e}
-#tvseries #episodereview #seriesrecap #showbreakdown
-`.trim()
-;
-
-// =====================
-// 5 THUMBNAILS PATH (UNTUK CSV)
-// =====================
-const safeName = name
-  .toLowerCase()
-  .replace(/[^a-z0-9]/g, '')
-
-// Membuat 5 path sekaligus: _1.jpg, _2.jpg, dst.
-const thumbPaths = []
-for (let i = 1; i <= 5; i++) {
-  thumbPaths.push(`C:\\Users\\\Administrator\\Desktop\\thumb\\${safeName}_s${s}_e${e}_${i}.jpg`)
-}
-
-// Gabungkan kelima path dengan koma agar jadi 5 kolom di CSV
-const thumbnail = thumbPaths.join(',')
-
-
-// =====================
-// CUSTOM LINK FORMAT
-// =====================
-const seleniumComment = computed(() => {
-  if (!tv.value || !selectedSeason.value || !selectedEpisode.value) return ''
-
-  const name = tv.value.name
-  const s = selectedSeason.value
-  const e = selectedEpisode.value
-
-  const slug = name
-    .toLowerCase()
-    .replace(/\s+/g, '-')
-    .replace(/[^a-z0-9-]/g, '')
-
-  return `${name} S${s} E${e}: https://justplay-tv.online/tv/${tvId}/${s}/${e}`
-})
-
-const slug = name
-  .toLowerCase()
-  .replace(/\s+/g, '-')
-  .replace(/[^a-z0-9-]/g, '')
-
-const comment = `${name} S${s} E${e}: https://justplay-tv.online/tv/${tvId}/${slug}-${s}-${e}`
-
-
-  // =====================
-  // CSV OUTPUT
-  // =====================
-  return `${title},"${description}",${thumbnail},"${comment}"`
-})
-
-
-
-function randomYoutubeDescription () {
+/* =====================
+   DESCRIPTION
+===================== */
+function randomYoutubeDescription() {
   if (!tv.value || !episodeData.value) return
 
   const name = tv.value.name
@@ -379,7 +194,87 @@ function randomYoutubeDescription () {
   const e = selectedEpisode.value
 
   youtubeDescription.value = `
-🎬 Watch ${name} - Season ${s} Episode ${e} Full Episode
+Watch ${name} Season ${s} Episode ${e} Full HD
+
+${name} S${s}E${e} Review
+${name} Episode ${e} Highlights
+${name} Season ${s} Breakdown
+
+Thanks for watching!
+
+#${name.replace(/\s+/g, '').toLowerCase()}
+#s${s}e${e}
+`.trim()
+}
+
+/* =====================
+   AUTO GENERATE
+===================== */
+watch(episodeData, (v) => {
+  if (v) {
+    randomYoutubeTitle()
+    randomYoutubeDescription()
+  }
+})
+
+/* =====================
+   COPY
+===================== */
+function copy(text) {
+  if (!text) return
+  navigator.clipboard.writeText(text)
+}
+
+/* =====================
+   LINK
+===================== */
+const slug = computed(() =>
+  tv.value
+    ? tv.value.name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-') 
+        .replace(/^-|-$/g, '')
+    : ''
+)
+
+const episodeLink = computed(() => {
+  if (!tv.value || !selectedSeason.value || !selectedEpisode.value) return ''
+  return `http://justplay-tv.online/tv/${tvId}/${slug.value}-${selectedSeason.value}-${selectedEpisode.value}`
+})
+
+const episodeLinkOriginal = computed(() => {
+  if (!tv.value || !selectedSeason.value || !selectedEpisode.value) return ''
+  return `http://justplay-tv.online/tv/${tvId}/${slug.value}-${selectedSeason.value}-${selectedEpisode.value}`
+})
+
+/* =====================
+   CSV EXPORT
+===================== */
+const customCSV = computed(() => {
+  if (!tv.value || !episodeData.value) return ''
+
+  const name = tv.value.name
+  const s = selectedSeason.value
+  const e = selectedEpisode.value
+  const id = tvId
+
+  const slug = name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+
+  const titleTemplates = [
+    `${name} Season ${s} Episode ${e} Full Episode`,
+    `${name} Season ${s} Episode ${e} Full Episode - (HD)`,
+    `${name} Season ${s} Episode ${e} Episodes - (HD)`,
+    `${name} Season ${s} Episode ${e} Full Episodes`,
+    `${name} Season ${s} Episode ${e} Full Episode HD`
+  ]
+
+  const title = titleTemplates[Math.floor(Math.random() * titleTemplates.length)]
+
+  const description = `🎬 Watch ${name} - Season ${s} Episode ${e} Full Episode
 
 ${name} S${s}E${e} HD
 ${name} S${s} E${e} Full HD
@@ -389,6 +284,7 @@ ${name} Season ${s} Episode ${e} HD
 ${name} Season ${s} Episode ${e} Full HD
 ${name} Season ${s} Episode ${e} Full Episode
 
+This video contains commentary, reactions, analysis, and discussion about ${name} Season ${s} Episode ${e}.
 
 I hope you enjoy watching the series ${name} Season ${s} Episode ${e} on My Channel.
 Subscribe to my channel and get notifications for the latest Episodes.
@@ -398,515 +294,482 @@ Thanks for visiting & watching.
 #${name.replace(/\s+/g, '').toLowerCase()}season${s}
 #${name.replace(/\s+/g, '').toLowerCase()}episode${e}
 #${name.replace(/\s+/g, '').toLowerCase()}s${s}e${e}
-#tvseries #episodereview #seriesrecap #showbreakdown
-`.trim()
-}
+#tvseries #episodereview #seriesrecap #showbreakdown`.trim()
 
+  const safeName = name.toLowerCase().replace(/[^a-z0-9]/g, '')
 
-/* AUTO GENERATE SETIAP EPISODE GANTI */
-watch(episodeData, (v) => {
-  if (v) {
-    randomYoutubeTitle()
-    randomYoutubeDescription()
-  }
+  const thumbs = Array.from({ length: 5 }, (_, i) =>
+    `C:\\Users\\Administrator\\Desktop\\thumb\\${safeName}_${i + 1}.jpg`
+  )
+
+  const link = `${name} S${s} E${e}: http://justplay-tv.online/tv/${id}/${slug}-${s}-${e}`
+
+  return [
+    title,
+    `"${description}"`,
+    ...thumbs,
+    `"${link}"`
+  ].join(',')
 })
-
 
 /* =====================
-   LINK
+   DOWNLOAD IMAGE (WITH EDITS)
 ===================== */
-const slug = computed(() =>
-  tv.value
-    ? tv.value.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')
-    : ''
-)
-
-const episodeLink = computed(() => {
-  if (!slug.value || !selectedSeason.value || !selectedEpisode.value) return ''
-
-  return `${tv.value.name} S${selectedSeason.value} E${selectedEpisode.value}: https://justplay-tv.online/tv/${tvId}/${selectedSeason.value}/${selectedEpisode.value}`
-})
-
-const episodeLinkOriginal = computed(() => {
-  if (!tvId || !selectedSeason.value || !selectedEpisode.value) return ''
-
-  return `${tv.value.name} S${selectedSeason.value} E${selectedEpisode.value}: https://justplay-tv.online/tv/${tvId}/${selectedSeason.value}/${selectedEpisode.value}}`
-})
-
-
-function copy(text) {
-  if (!text) return
-  navigator.clipboard.writeText(text)
-}
-
-
-/* =====================
-   RANDOM IMAGE
-===================== */
-function pickRandomImages () {
-  if (!Array.isArray(allImages.value)) return
-  if (allImages.value.length < 5) return
-
-  const unique = new Set()
-  const selected = []
-
-  while (selected.length < 5) {
-    const randIndex = Math.floor(Math.random() * allImages.value.length)
-    const img = allImages.value[randIndex]
-
-    if (!unique.has(img.file_path)) {
-      unique.add(img.file_path)
-      selected.push(img)
-    }
-  }
-
-  landscapeImages.value = selected.map(r => {
-    const original = 'https://image.tmdb.org/t/p/original' + r.file_path
-    return (
-      'https://wsrv.nl/?url=' +
-      encodeURIComponent(original) +
-      '&format=jpg&n=-1&q=90'
-    )
-  })
-}
-
-
-watch(tv, v => v && pickRandomImages(), { immediate: true })
-async function convertPosterToJPG() {
-  if (!tv.value?.poster_path) return
+function downloadImage(index) {
+  if (!landscapeImages.value.length) return
 
   const img = new Image()
   img.crossOrigin = 'anonymous'
-  img.src = poster.value
+  img.src = landscapeImages.value[index]
 
   img.onload = () => {
     const canvas = document.createElement('canvas')
-    canvas.width = img.width
-    canvas.height = img.height
+    canvas.width = 1280
+    canvas.height = 720
 
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-  // Blur background dulu
-  ctx.filter = 'blur(6px)'
-  ctx.drawImage(
-    img,
-    x,
-    y,
-    img.width * scale,
-    img.height * scale
-  )
+    // 1. Tambahkan Filter Kontras & Saturasi agar warna tidak flat
+    ctx.filter = 'contrast(1.12) saturate(1.15)'
 
-  // Gambar lagi versi normal di atasnya (biar tidak terlalu blur)
-  ctx.filter = 'none'
-  ctx.drawImage(
-    img,
-    x,
-    y,
-    img.width * scale,
-    img.height * scale
-  )
+    // 2. Gambar frame dasar dari TMDB
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+    
+    // Reset filter supaya efek berikutnya tidak bentrok
+    ctx.filter = 'none'
 
+    // 3. Efek Vignette Gelap di setiap sudut layar (Cinematic Look)
+    const vignette = ctx.createRadialGradient(
+      canvas.width / 2, canvas.height / 2, canvas.width * 0.3,
+      canvas.width / 2, canvas.height / 2, canvas.width * 0.75
+    )
+    vignette.addColorStop(0, 'rgba(0, 0, 0, 0)')
+    vignette.addColorStop(1, 'rgba(0, 0, 0, 0.65)')
+    ctx.fillStyle = vignette
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+    // 4. Tambahkan Border Garis Dalam Tipis Premium
+    ctx.lineWidth = 4
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)'
+    ctx.strokeRect(2, 2, canvas.width - 4, canvas.height - 4)
+
+    // Simpan Blob & Eksekusi Unduhan otomatis
+    canvas.toBlob(blob => {
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+
+      a.href = url
+      const baseName = tv.value.name
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, '')
+
+      const filename = `${baseName}_${index + 1}.jpg`
+
+      a.download = filename
+      a.click()
+
+      URL.revokeObjectURL(url)
+    }, 'image/jpeg', 0.92)
   }
 }
 
-
-// =====================
-// DOWNLOAD IMAGE < 2MB (AUTO COMPRESS)
-// =====================
-async function downloadImage(index) {
-  if (!landscapeImages.value?.length || !tv.value) return
-
-  const imgUrl = landscapeImages.value[index]
-  if (!imgUrl) return
-
-  const img = new Image()
-  img.crossOrigin = 'anonymous'
-  img.src = imgUrl
-
-  img.onload = async () => {
-    const canvas = document.createElement('canvas')
-    canvas.width = 1280
-    canvas.height = 720
-    const ctx = canvas.getContext('2d')
-
-    const scale = Math.max(
-      canvas.width / img.width,
-      canvas.height / img.height
-    )
-
-    const x = (canvas.width - img.width * scale) / 2
-    const y = (canvas.height - img.height * scale) / 2
-
-    ctx.drawImage(
-      img,
-      x,
-      y,
-      img.width * scale,
-      img.height * scale
-    )
-/* =====================
-   TOP LEFT PREMIUM
-===================== */
-
-const season = selectedSeason.value
-const episode = selectedEpisode.value
-const topText = `S${season} EP${episode}`
-
-// RANDOM HOOK
-const hooks = [
-  // Original & Strong
-  'SHOCKING TWIST',
-  'THE TRUTH REVEALED',
-  'THIS CHANGES EVERYTHING',
-  
-  // High CTR US Style
-  'FULL EPISODE LINK IN COMMENT'
-]
-
-const randomHook = hooks[Math.floor(Math.random() * hooks.length)]
-
-// POSISI KIRI ATAS
-ctx.textAlign = 'left'
-ctx.textBaseline = 'top'
-
-const padding = 40
-const leftX = padding
-let textY = padding
-
-// ===== S EP =====
-ctx.font = `800 42px Impact`
-ctx.lineWidth = 6
-ctx.strokeStyle = '#000'
-ctx.shadowColor = 'rgba(0,0,0,0.8)'
-ctx.shadowBlur = 12
-
-ctx.strokeText(topText, leftX, textY)
-
-const goldGrad1 = ctx.createLinearGradient(0, textY, 0, textY + 50)
-goldGrad1.addColorStop(0, '#fff8dc')
-goldGrad1.addColorStop(0.5, '#ffd700')
-goldGrad1.addColorStop(1, '#b8860b')
-
-ctx.fillStyle = goldGrad1
-ctx.fillText(topText, leftX, textY)
-
-// ===== HOOK =====
-textY += 60
-
-ctx.font = `900 68px Impact`
-ctx.lineWidth = 10
-ctx.strokeStyle = '#000'
-ctx.shadowColor = 'rgba(0,0,0,0.9)'
-ctx.shadowBlur = 25
-
-ctx.strokeText(randomHook, leftX, textY)
-
-const goldGrad2 = ctx.createLinearGradient(0, textY - 40, 0, textY + 80)
-goldGrad2.addColorStop(0, '#fff8dc')
-goldGrad2.addColorStop(0.3, '#ffd700')
-goldGrad2.addColorStop(0.6, '#ffb700')
-goldGrad2.addColorStop(1, '#b8860b')
-
-ctx.fillStyle = goldGrad2
-ctx.fillText(randomHook, leftX, textY)
-
-ctx.shadowBlur = 0
-
-
-    /* =====================
-       BRANDING
-    ===================== */
-    const brandText = 'JUSTPLAY-TV.ONLINE'
-    ctx.font = `600 26px Arial`
-    ctx.textAlign = 'left'
-    ctx.textBaseline = 'bottom'
-    ctx.fillStyle = '#FFFFFF'
-    ctx.fillText(brandText, 30, canvas.height - 30)
-
-    /* =====================
-       COMPRESS <2MB
-    ===================== */
-    let quality = 0.9
-    let blob
-
-    do {
-      blob = await new Promise(resolve =>
-        canvas.toBlob(resolve, 'image/jpeg', quality)
-      )
-      quality -= 0.05
-    } while (blob.size > 2 * 1024 * 1024 && quality > 0.4)
-
-    const url = URL.createObjectURL(blob)
-
-    /* =====================
-       CLEAN TITLE (NO SPACE, NO SYMBOL)
-    ===================== */
-    const baseName = tv.value.name
-  .toLowerCase()
-  .replace(/[^a-z0-9]/gi, '') // hanya huruf & angka
-  .replace(/\s+/g, '')       // hilangkan spasi
-
-// Ambil data season dan episode saat ini
-const s = selectedSeason.value
-const e = selectedEpisode.value
-
-// Gabungkan menjadi format: namaserial_s1_e1_index.jpg
-const filename = `${baseName}_s${s}_e${e}_${index + 1}.jpg`
-
-
-    const link = document.createElement('a')
-    link.href = url
-    link.download = filename
-    link.click()
-
-    URL.revokeObjectURL(url)
+function downloadAllImages() {
+  for (let i = 0; i < 5; i++) {
+    setTimeout(() => downloadImage(i), i * 300)
   }
 }
-
-
 </script>
 
-
 <template>
-  <div class="page" v-if="tv">
-    <div class="card">
+  <div v-if="tv" class="page">
+    <div class="container">
+      
+      <header class="header">
+        <div>
+          <span class="badge">Studio Mode</span>
+          <h1 class="title">{{ tv.name }}</h1>
+        </div>
+        
+        <div class="selector-group">
+          <div class="select-wrapper">
+            <select v-model="selectedSeason">
+              <option v-for="s in seasonList" :key="s.id" :value="s.season_number">
+                Season {{ s.season_number }}
+              </option>
+            </select>
+          </div>
 
+          <div class="select-wrapper">
+            <select v-model="selectedEpisode">
+              <option
+                v-for="e in seasonData?.episodes"
+                :key="e.id"
+                :value="e.episode_number"
+              >
+                Eps {{ e.episode_number }} {{ e.air_date ? `(${formatFullDate(e.air_date).split(',')[0]})` : '' }}
+              </option>
+            </select>
+          </div>
+        </div>
+      </header>
 
-
-      <div class="row">
-        <select v-model="selectedSeason">
-          <option v-for="s in seasonList" :key="s.id" :value="s.season_number">
-            Season {{ s.season_number }}
-              <span v-if="s.air_date">
-    ({{ formatMonthYear(s.air_date) }})
-  </span>
-          </option>
-        </select>
-
-        <select v-model="selectedEpisode">
-          <option
-            v-for="e in seasonData?.episodes"
-            :key="e.id"
-            :value="e.episode_number"
+      <section class="section">
+        <div class="section-header">
+          <h2 class="section-title">Generated Thumbnails</h2>
+          <button class="btn btn-primary" @click="downloadAllImages">
+            Download 5 Images
+          </button>
+        </div>
+        
+        <div class="thumb-grid">
+          <div 
+            v-for="(img, i) in landscapeImages.slice(0,5)" 
+            :key="i" 
+            class="thumb-card"
           >
-            Episode {{ e.episode_number }}
-            <span v-if="e.air_date">
-    ({{ formatFullDate(e.air_date) }})
-  </span>
-          </option>
-        </select>
-      </div>
-      <div v-if="landscapeImages.length" class="thumb-grid">
-  <img
-    v-for="(img, i) in landscapeImages"
-    :key="i"
-    :src="img"
-    class="poster"
-    draggable="true"
-  />
-</div>
+            <img :src="img || 'https://via.placeholder.com/1280x720?text=No+Thumbnail+Available'" class="poster" alt="Thumbnail Preview" />
+            <span class="thumb-index">#{{ i + 1 }}</span>
+          </div>
+        </div>
+      </section>
 
+      <section class="section">
+        <h2 class="section-title">YouTube Metadata</h2>
+        
+        <div class="grid-inputs">
+          <div class="input-card">
+            <div class="input-header">
+              <label>Video Title</label>
+              <button class="btn-copy" @click="copy(youtubeTitle)">Copy</button>
+            </div>
+            <input type="text" :value="youtubeTitle" readonly class="styled-input" />
+          </div>
 
-<div v-if="landscapeImages.length" class="actions">
-  <button @click="downloadImage(0)">Download Thumb 1</button>
-  <button @click="downloadImage(1)">Download Thumb 2</button>
-  <button @click="downloadImage(2)">Download Thumb 3</button>
-  <button @click="downloadImage(3)">Download Thumb 4</button>
-  <button @click="downloadImage(4)">Download Thumb 5</button>
-</div>
+          <div class="input-card">
+            <div class="input-header">
+              <label>Target URL</label>
+              <button class="btn-copy" @click="copy(episodeLink)">Copy</button>
+            </div>
+            <input type="text" :value="episodeLink" readonly class="styled-input link-style" />
+          </div>
+        </div>
 
+        <div class="input-card huge-box">
+          <div class="input-header">
+            <label>Video Description</label>
+            <button class="btn-copy" @click="copy(youtubeDescription)">Copy Description</button>
+          </div>
+          <textarea :value="youtubeDescription" readonly class="styled-textarea"></textarea>
+        </div>
 
-<div v-if="episodeData" class="box">
-<textarea id="yt-title" :value="youtubeTitle" readonly></textarea>
-<textarea id="yt-description" :value="youtubeDescription" readonly></textarea>
-<textarea id="yt-url" :value="mainHashtag" readonly></textarea>
-  <div class="actions">
-    <button @click="randomYoutubeTitle">🎲 Random</button>
-    <button @click="copy(youtubeTitle)">📋 Copy Judul</button>
-    <button @click="copy(mainHashtag)">#️⃣ Copy Hashtag</button>
-  </div>
-</div>
+        <div class="input-card csv-box">
+          <div class="input-header">
+            <label>CSV Bulk Row Data</label>
+            <button class="btn-copy" @click="copy(customCSV)">Copy CSV String</button>
+          </div>
+          <textarea :value="customCSV" readonly class="styled-textarea code-font"></textarea>
+        </div>
+      </section>
 
-
-
-<div v-if="episodeData" class="box">
-  <label>Deskripsi YouTube SEO</label>
-
-  <textarea rows="2" :value="youtubeDescription" readonly />
-
-  <div class="actions">
-    <button @click="randomYoutubeDescription">🎲 Random</button>
-    <button @click="copy(youtubeDescription)">📋 Copy</button>
-  </div>
-</div>
-
-<!-- Kolom Custom Deskripsi (CSV style, otomatis) -->
-<div v-if="episodeData" class="box">
-  <label>Custom Deskripsi CSV (Editable)</label>
-  <textarea
-    rows="2"
-    :value="customDescription"
-    readonly
-  ></textarea>
-  <div class="actions">
-    <button @click="copy(customDescription)">📋 Copy</button>
-  </div>
-</div>
-
-
-      <!-- BOX ATAS -->
-<div v-if="episodeData" class="box link-vertical">
-  <label>Link Episode (Original)</label>
-  <input :value="episodeLinkOriginal" readonly />
-  <button @click="copy(episodeLinkOriginal)">🔗 Copy </button>
-</div>
-
-<!-- BOX BAWAH (INI YANG KAMU MAKSUD) -->
-<div v-if="episodeData" class="box link-vertical">
-  <label>Link (Cineflix)</label>
-  <input :value="episodeLink" readonly />
-  <button @click="copy(episodeLink)">🔗 Copy </button>
-</div>
     </div>
   </div>
-  <!-- =====================
-     SELENIUM READ ONLY
-===================== -->
-<div v-if="tv && landscapeImages.length" style="display:none">
-
-  <!-- POSTER -->
-  <img
-    id="selenium-poster"
-    :src="poster"
-    alt="poster"
-  />
-
-  <!-- LANDSCAPE THUMBNAILS -->
-  <img
-    v-for="(img, i) in landscapeImages"
-    :key="'selenium-' + i"
-    :id="`selenium-thumb-${i+1}`"
-    :src="img"
-    alt="thumbnail"
-  />
-
-</div>
-<!-- COMMENT LINK (SELENIUM) -->
-<textarea
-  id="selenium-comment"
-  :value="seleniumComment"
-  readonly
-></textarea>
-
 </template>
 
 <style scoped>
+/* =====================
+   GLOBAL RESET & THEME 
+===================== */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
 .page {
-  background: #0f0f0f;
+  font-family: 'Inter', sans-serif;
+  background-color: #0b0f19;
+  color: #f3f4f6;
   min-height: 100vh;
-  padding: 20px;
-  display: flex;
-  justify-content: center;
+  padding: 40px 20px;
+  box-sizing: border-box;
 }
 
-.card {
-  background: #161616;
-  max-width: 600px;
-  width: 100%;
-  padding: 16px;
-  border-radius: 14px;
-  color: #fff;
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+/* =====================
+   HEADER WORKSPACE
+===================== */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 20px;
+  border-bottom: 1px solid #1f2937;
+  padding-bottom: 24px;
+}
+
+.badge {
+  background: rgba(37, 99, 235, 0.15);
+  color: #3b82f6;
+  padding: 4px 10px;
+  border-radius: 99px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: inline-block;
+  margin-bottom: 8px;
+}
+
+.title {
+  font-size: 1.85rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 0;
+  color: #ffffff;
+}
+
+.selector-group {
+  display: flex;
+  gap: 12px;
+}
+
+.select-wrapper {
+  position: relative;
+}
+
+.select-wrapper select {
+  appearance: none;
+  background-color: #111827;
+  border: 1px solid #374151;
+  color: #f3f4f6;
+  padding: 10px 36px 10px 16px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.select-wrapper select:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+}
+
+.select-wrapper::after {
+  content: "↓";
+  font-size: 0.8rem;
+  color: #9ca3af;
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+/* =====================
+   SECTIONS & INTERFACES
+===================== */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.section-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #9ca3af;
+  margin: 0;
+  letter-spacing: 0.02em;
+}
+
+/* =====================
+   THUMBNAILS GRID
+===================== */
+.thumb-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+}
+
+@media (max-width: 900px) {
+  .thumb-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 600px) {
+  .thumb-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+.thumb-card {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #1f2937;
+  background-color: #111827;
+  aspect-ratio: 16/9;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
 }
 
 .poster {
   width: 100%;
-  height: 90px;          /* 👈 bikin lebih pendek */
-  object-fit: cover;    /* potong rapi */
-  border-radius: 12px;
-  margin-bottom: 12px;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
 }
 
-.thumb-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
+.thumb-card:hover .poster {
+  transform: scale(1.05);
 }
 
-.thumb-grid .poster {
-  height: 70px;      /* 👈 lebih kecil dari poster utama */
-  margin-bottom: 0;
-}
-
-
-.row {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 14px;
-}
-
-select,
-input,
-textarea {
-  width: 100%;
-  background: #222;
-  border: 1px solid #333;
+.thumb-index {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
   color: #fff;
-  padding: 10px;
-  border-radius: 8px;
-  font-size: 14px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-textarea {
-  resize: none;
-}
-
-.box {
-  margin-bottom: 16px;
-}
-
-label {
-  font-size: 13px;
-  opacity: 0.8;
-  display: block;
-  margin-bottom: 6px;
-}
-
-.actions {
-  display: flex;
-  gap: 10px;
-  margin-top: 6px;
-}
-
-button {
-  background: #2563eb;
-  border: none;
-  padding: 8px 12px;
-  border-radius: 8px;
-  color: white;
-  font-size: 14px;
-  cursor: pointer;
-}
 /* =====================
-   TWO COLUMN LINK BOX
+   INPUTS & CONTAINERS
 ===================== */
-.two-col {
+.grid-inputs {
   display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 8px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 768px) {
+  .grid-inputs { grid-template-columns: 1fr; }
+}
+
+.input-card {
+  background: #111827;
+  border: 1px solid #1f2937;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.input-header {
+  display: flex;
+  justify-content: space-between;
   align-items: center;
 }
 
-.two-col label {
-  grid-column: 1 / -1;
+.input-header label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
-.two-col input {
-  min-width: 0;
+.styled-input, .styled-textarea {
+  width: 100%;
+  background: #1f2937;
+  border: 1px solid #374151;
+  color: #f3f4f6;
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 0.9rem;
+  box-sizing: border-box;
+  font-family: inherit;
 }
 
-.two-col button {
-  white-space: nowrap;
+.styled-input:focus, .styled-textarea:focus {
+  outline: none;
+  border-color: #2563eb;
+  background: #1f2937;
 }
 
+.link-style {
+  color: #60a5fa;
+  font-weight: 500;
+}
+
+.styled-textarea {
+  resize: vertical;
+  min-height: 140px;
+  line-height: 1.6;
+}
+
+.huge-box .styled-textarea {
+  min-height: 220px;
+}
+
+.code-font {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85rem;
+  color: #34d399;
+}
+
+/* =====================
+   BUTTONS INTERACTIVE
+===================== */
+.btn {
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 0.85rem;
+  padding: 10px 20px;
+  border-radius: 10px;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.btn-primary {
+  background: #2563eb;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+}
+
+.btn-primary:hover {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-copy {
+  background: #1f2937;
+  border: 1px solid #374151;
+  color: #cbd5e1;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-copy:hover {
+  background: #374151;
+  color: #ffffff;
+  border-color: #4b5563;
+}
+
+.btn-copy:active {
+  background: #111827;
+}
 </style>
