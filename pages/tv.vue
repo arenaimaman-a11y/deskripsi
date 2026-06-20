@@ -274,7 +274,7 @@ const customCSV = computed(() => {
 
   const title = titleTemplates[Math.floor(Math.random() * titleTemplates.length)]
 
-  const description = `🎬 Watch ${name} - Season ${s} Episode ${e} Full Episode
+  const description = `Watch ${name} - Season ${s} Episode ${e} Full Episode
 
 ${name} S${s}E${e} HD
 ${name} S${s} E${e} Full HD
