@@ -239,12 +239,12 @@ const slug = computed(() =>
 
 const episodeLink = computed(() => {
   if (!tv.value || !selectedSeason.value || !selectedEpisode.value) return ''
-  return `http://us.justplay-tv.online/tv/${tvId}/${slug.value}-${selectedSeason.value}-${selectedEpisode.value}`
+  return `https://us.justplay-tv.online/tv/${tvId}/${slug.value}-${selectedSeason.value}-${selectedEpisode.value}`
 })
 
 const episodeLinkOriginal = computed(() => {
   if (!tv.value || !selectedSeason.value || !selectedEpisode.value) return ''
-  return `http://us.justplay-tv.online/tv/${tvId}/${slug.value}-${selectedSeason.value}-${selectedEpisode.value}`
+  return `https://us.justplay-tv.online/tv/${tvId}/${slug.value}-${selectedSeason.value}-${selectedEpisode.value}`
 })
 
 /* =====================
@@ -302,7 +302,7 @@ Thanks for visiting & watching.
     `C:\\Users\\Administrator\\Desktop\\thumb\\${safeName}_${i + 1}.jpg`
   )
 
-  const link = `${name} S${s} E${e}: http://us.justplay-tv.online/tv/${id}/${slug}-${s}-${e}`
+  const link = `${name} S${s} E${e}: https://us.justplay-tv.online/tv/${id}/${slug}-${s}-${e}`
 
   return [
     title,
