@@ -239,12 +239,12 @@ const slug = computed(() =>
 
 const episodeLink = computed(() => {
   if (!tv.value || !selectedSeason.value || !selectedEpisode.value) return ''
-  return `https://us.justplay-tv.online/tv/${tvId}/${slug.value}-${selectedSeason.value}-${selectedEpisode.value}`
+  return `https://justplay-tv.online/tv/${tvId}/${slug.value}-${selectedSeason.value}-${selectedEpisode.value}`
 })
 
 const episodeLinkOriginal = computed(() => {
   if (!tv.value || !selectedSeason.value || !selectedEpisode.value) return ''
-  return `https://us.justplay-tv.online/tv/${tvId}/${slug.value}-${selectedSeason.value}-${selectedEpisode.value}`
+  return `https://justplay-tv.online/tv/${tvId}/${slug.value}-${selectedSeason.value}-${selectedEpisode.value}`
 })
 
 /* =====================
