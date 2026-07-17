@@ -299,7 +299,7 @@ Thanks for visiting & watching.
   const safeName = name.toLowerCase().replace(/[^a-z0-9]/g, '')
 
   const thumbs = Array.from({ length: 5 }, (_, i) =>
-    `C:\\Users\\USER\\Desktop\\thumb\\${safeName}_${i + 1}.jpg`
+    `C:\\Users\\Administrator\\Desktop\\thumb\\${safeName}_${i + 1}.jpg`
   )
 
   const link = `${name} S${s} E${e}: https://us.justplay-tv.online/tv/${id}/${slug}-${s}-${e}`
