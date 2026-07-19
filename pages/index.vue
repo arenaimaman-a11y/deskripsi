@@ -18,7 +18,7 @@ function navigateTo(url, event) {
 }
 
 /* =====================
-   SEARCH
+   SEARCH (TV & MOVIES)
 ===================== */
 const searchQuery = ref('')
 const searchResults = ref([])
@@ -32,53 +32,78 @@ watch(searchQuery, async (q) => {
 
   isSearching.value = true
   try {
-    const res = await $fetch('https://api.themoviedb.org/3/search/tv', {
-      query: {
-        api_key: config.public.tmdbApiKey,
-        query: q,
-        language: 'en-US'
-      }
-    })
-    searchResults.value = (res.results || []).slice(0, 9)
+    // Cari TV dan Movie secara bersamaan
+    const [tvRes, movieRes] = await Promise.all([
+      $fetch('https://api.themoviedb.org/3/search/tv', {
+        query: { api_key: config.public.tmdbApiKey, query: q, language: 'en-US' }
+      }),
+      $fetch('https://api.themoviedb.org/3/search/movie', {
+        query: { api_key: config.public.tmdbApiKey, query: q, language: 'en-US' }
+      })
+    ])
+
+    // Beri penanda tipe data agar URL tujuannya benar saat diklik
+    const tvData = (tvRes.results || []).map(item => ({ ...item, type: 'tv' }))
+    const movieData = (movieRes.results || []).map(item => ({ ...item, type: 'movie', name: item.title })) // Movie menggunakan 'title', kita aliaskan ke 'name'
+
+    // Gabungkan dan batasi maksimal 12 baris data
+    searchResults.value = [...tvData, ...movieData].slice(0, 12)
+  } catch (error) {
+    console.error('Search error:', error)
   } finally {
     isSearching.value = false
   }
 })
 
 /* =====================
-   DATA
+   DATA STATE
 ===================== */
-const trending = ref([])
-const airdate = ref([])
-const popular = ref([])
+// TV States
+const trendingTv = ref([])
+const airdateTv = ref([])
+const popularTv = ref([])
+
+// Movie States
+const trendingMovies = ref([])
+const airdateMovies = ref([]) // Untuk film, ini diisi "Now Playing" atau "Upcoming"
+const popularMovies = ref([])
 
 onMounted(async () => {
   const today = new Date().toISOString().split('T')[0]
 
-  const [t, a, p] = await Promise.all([
-    $fetch('https://api.themoviedb.org/3/trending/tv/week', {
-      query: { api_key: config.public.tmdbApiKey }
-    }),
-    $fetch('https://api.themoviedb.org/3/discover/tv', {
-      query: {
-        api_key: config.public.tmdbApiKey,
-        sort_by: 'first_air_date.desc',
-        'first_air_date.lte': today,
-        language: 'en-US'
-      }
-    }),
-    $fetch('https://api.themoviedb.org/3/discover/tv', {
-      query: {
-        api_key: config.public.tmdbApiKey,
-        sort_by: 'popularity.desc',
-        language: 'en-US'
-      }
-    })
-  ])
+  try {
+    const [tTv, aTv, pTv, tMv, aMv, pMv] = await Promise.all([
+      // --- TV Fetch ---
+      $fetch('https://api.themoviedb.org/3/trending/tv/week', { query: { api_key: config.public.tmdbApiKey } }),
+      $fetch('https://api.themoviedb.org/3/discover/tv', {
+        query: { api_key: config.public.tmdbApiKey, sort_by: 'first_air_date.desc', 'first_air_date.lte': today, language: 'en-US' }
+      }),
+      $fetch('https://api.themoviedb.org/3/discover/tv', {
+        query: { api_key: config.public.tmdbApiKey, sort_by: 'popularity.desc', language: 'en-US' }
+      }),
+      // --- Movie Fetch ---
+      $fetch('https://api.themoviedb.org/3/trending/movie/week', { query: { api_key: config.public.tmdbApiKey } }),
+      $fetch('https://api.themoviedb.org/3/discover/movie', {
+        query: { api_key: config.public.tmdbApiKey, sort_by: 'release_date.desc', 'release_date.lte': today, language: 'en-US' }
+      }),
+      $fetch('https://api.themoviedb.org/3/discover/movie', {
+        query: { api_key: config.public.tmdbApiKey, sort_by: 'popularity.desc', language: 'en-US' }
+      })
+    ])
 
-  trending.value = t.results || []
-  airdate.value = a.results || []
-  popular.value = p.results || []
+    // Assign data TV
+    trendingTv.value = tTv.results || []
+    airdateTv.value = aTv.results || []
+    popularTv.value = pTv.results || []
+
+    // Assign data Movie (serta menyamakan properti 'title' menjadi 'name' agar template seragam)
+    trendingMovies.value = (tMv.results || []).map(m => ({ ...m, name: m.title }))
+    airdateMovies.value = (aMv.results || []).map(m => ({ ...m, name: m.title }))
+    popularMovies.value = (pMv.results || []).map(m => ({ ...m, name: m.title }))
+
+  } catch (error) {
+    console.error('Failed to fetch dashboard data:', error)
+  }
 })
 </script>
 
@@ -95,7 +120,7 @@ onMounted(async () => {
         <div class="search-box">
           <input
             v-model="searchQuery"
-            placeholder="Search TV series..."
+            placeholder="Search TV series & movies..."
             class="search-input"
           />
           <div v-if="isSearching" class="spinner"></div>
@@ -103,21 +128,24 @@ onMounted(async () => {
       </header>
 
       <main class="content-area">
+        <!-- ===================== SEARCH RESULTS ===================== -->
         <section v-if="searchQuery && searchResults.length" class="main-section">
           <h2 class="section-title search-title">Search Results for "{{ searchQuery }}"</h2>
           <div class="movie-grid">
             <a
-              v-for="tv in searchResults"
-              :key="tv.id"
-              :href="`/tv?id=${tv.id}`"
+              v-for="item in searchResults"
+              :key="`${item.type}-${item.id}`"
+              :href="`/${item.type}?id=${item.id}`"
               class="movie-card"
-              @click="(event) => navigateTo(`/tv?id=${tv.id}`, event)"
+              @click="(event) => navigateTo(`/${item.type}?id=${item.id}`, event)"
             >
               <div class="poster-wrapper">
-                <img :src="tv.poster_path ? `https://image.tmdb.org/t/p/w342${tv.poster_path}` : 'https://via.placeholder.com/185x278?text=No+Poster'" alt="Poster" />
+                <img :src="item.poster_path ? `https://image.tmdb.org/t/p/w342${item.poster_path}` : 'https://via.placeholder.com/185x278?text=No+Poster'" alt="Poster" />
                 <div class="card-overlay"></div>
+                <!-- Mini tag penanda tipe -->
+                <span class="type-tag" :class="item.type">{{ item.type.toUpperCase() }}</span>
               </div>
-              <p class="movie-name">{{ tv.name }}</p>
+              <p class="movie-name">{{ item.name }}</p>
             </a>
           </div>
         </section>
@@ -126,68 +154,97 @@ onMounted(async () => {
           <p>No results found for "{{ searchQuery }}"</p>
         </section>
 
-        <section v-if="!searchQuery && trending.length" class="main-section">
-          <div class="section-header">
-            <h2 class="section-title"><span class="icon">🔥</span> Trending</h2>
-          </div>
-          <div class="movie-grid">
-            <a
-              v-for="tv in trending"
-              :key="tv.id"
-              :href="`/tv?id=${tv.id}`"
-              class="movie-card"
-              @click="(event) => navigateTo(`/tv?id=${tv.id}`, event)"
-            >
-              <div class="poster-wrapper">
-                <img :src="tv.poster_path ? `https://image.tmdb.org/t/p/w342${tv.poster_path}` : 'https://via.placeholder.com/185x278?text=No+Poster'" alt="Poster" />
-                <div class="card-overlay"></div>
+        <!-- ===================== HOME SECTIONS (WHEN NOT SEARCHING) ===================== -->
+        <div v-if="!searchQuery" class="dashboard-sections">
+          
+          <!-- 1. TRENDING SECTION -->
+          <div class="dual-row">
+            <section v-if="trendingTv.length" class="main-section">
+              <h2 class="section-title"><span class="icon">🔥</span> Trending TV Shows</h2>
+              <div class="movie-grid horizontal-scroll">
+                <a v-for="tv in trendingTv.slice(0, 6)" :key="tv.id" :href="`/tv?id=${tv.id}`" class="movie-card" @click="(event) => navigateTo(`/tv?id=${tv.id}`, event)">
+                  <div class="poster-wrapper">
+                    <img :src="tv.poster_path ? `https://image.tmdb.org/t/p/w342${tv.poster_path}` : 'https://via.placeholder.com/185x278?text=No+Poster'" alt="Poster" />
+                    <div class="card-overlay"></div>
+                  </div>
+                  <p class="movie-name">{{ tv.name }}</p>
+                </a>
               </div>
-              <p class="movie-name">{{ tv.name }}</p>
-            </a>
-          </div>
-        </section>
+            </section>
 
-        <section v-if="!searchQuery && airdate.length" class="main-section">
-          <div class="section-header">
-            <h2 class="section-title"><span class="icon">🗓</span> Latest Air Date</h2>
-          </div>
-          <div class="movie-grid">
-            <a
-              v-for="tv in airdate"
-              :key="tv.id"
-              :href="`/tv?id=${tv.id}`"
-              class="movie-card"
-              @click="(event) => navigateTo(`/tv?id=${tv.id}`, event)"
-            >
-              <div class="poster-wrapper">
-                <img :src="tv.poster_path ? `https://image.tmdb.org/t/p/w342${tv.poster_path}` : 'https://via.placeholder.com/185x278?text=No+Poster'" alt="Poster" />
-                <div class="card-overlay"></div>
+            <section v-if="trendingMovies.length" class="main-section">
+              <h2 class="section-title"><span class="icon">🎬</span> Trending Movies</h2>
+              <div class="movie-grid horizontal-scroll">
+                <a v-for="movie in trendingMovies.slice(0, 6)" :key="movie.id" :href="`/movie?id=${movie.id}`" class="movie-card" @click="(event) => navigateTo(`/movie?id=${movie.id}`, event)">
+                  <div class="poster-wrapper">
+                    <img :src="movie.poster_path ? `https://image.tmdb.org/t/p/w342${movie.poster_path}` : 'https://via.placeholder.com/185x278?text=No+Poster'" alt="Poster" />
+                    <div class="card-overlay"></div>
+                  </div>
+                  <p class="movie-name">{{ movie.name }}</p>
+                </a>
               </div>
-              <p class="movie-name">{{ tv.name }}</p>
-            </a>
+            </section>
           </div>
-        </section>
 
-        <section v-if="!searchQuery && popular.length" class="main-section">
-          <div class="section-header">
-            <h2 class="section-title"><span class="icon">👀</span> Most Watched</h2>
-          </div>
-          <div class="movie-grid">
-            <a
-              v-for="tv in popular"
-              :key="tv.id"
-              :href="`/tv?id=${tv.id}`"
-              class="movie-card"
-              @click="(event) => navigateTo(`/tv?id=${tv.id}`, event)"
-            >
-              <div class="poster-wrapper">
-                <img :src="tv.poster_path ? `https://image.tmdb.org/t/p/w342${tv.poster_path}` : 'https://via.placeholder.com/185x278?text=No+Poster'" alt="Poster" />
-                <div class="card-overlay"></div>
+          <!-- 2. LATEST / AIR DATE SECTION -->
+          <div class="dual-row">
+            <section v-if="airdateTv.length" class="main-section">
+              <h2 class="section-title"><span class="icon">🗓</span> Latest Air Date (TV)</h2>
+              <div class="movie-grid horizontal-scroll">
+                <a v-for="tv in airdateTv.slice(0, 6)" :key="tv.id" :href="`/tv?id=${tv.id}`" class="movie-card" @click="(event) => navigateTo(`/tv?id=${tv.id}`, event)">
+                  <div class="poster-wrapper">
+                    <img :src="tv.poster_path ? `https://image.tmdb.org/t/p/w342${tv.poster_path}` : 'https://via.placeholder.com/185x278?text=No+Poster'" alt="Poster" />
+                    <div class="card-overlay"></div>
+                  </div>
+                  <p class="movie-name">{{ tv.name }}</p>
+                </a>
               </div>
-              <p class="movie-name">{{ tv.name }}</p>
-            </a>
+            </section>
+
+            <section v-if="airdateMovies.length" class="main-section">
+              <h2 class="section-title"><span class="icon">🍿</span> Newly Released Movies</h2>
+              <div class="movie-grid horizontal-scroll">
+                <a v-for="movie in airdateMovies.slice(0, 6)" :key="movie.id" :href="`/movie?id=${movie.id}`" class="movie-card" @click="(event) => navigateTo(`/movie?id=${movie.id}`, event)">
+                  <div class="poster-wrapper">
+                    <img :src="movie.poster_path ? `https://image.tmdb.org/t/p/w342${movie.poster_path}` : 'https://via.placeholder.com/185x278?text=No+Poster'" alt="Poster" />
+                    <div class="card-overlay"></div>
+                  </div>
+                  <p class="movie-name">{{ movie.name }}</p>
+                </a>
+              </div>
+            </section>
           </div>
-        </section>
+
+          <!-- 3. MOST WATCHED / POPULAR SECTION -->
+          <div class="dual-row">
+            <section v-if="popularTv.length" class="main-section">
+              <h2 class="section-title"><span class="icon">👀</span> Most Watched TV Shows</h2>
+              <div class="movie-grid horizontal-scroll">
+                <a v-for="tv in popularTv.slice(0, 6)" :key="tv.id" :href="`/tv?id=${tv.id}`" class="movie-card" @click="(event) => navigateTo(`/tv?id=${tv.id}`, event)">
+                  <div class="poster-wrapper">
+                    <img :src="tv.poster_path ? `https://image.tmdb.org/t/p/w342${tv.poster_path}` : 'https://via.placeholder.com/185x278?text=No+Poster'" alt="Poster" />
+                    <div class="card-overlay"></div>
+                  </div>
+                  <p class="movie-name">{{ tv.name }}</p>
+                </a>
+              </div>
+            </section>
+
+            <section v-if="popularMovies.length" class="main-section">
+              <h2 class="section-title"><span class="icon">⭐</span> Most Watched Movies</h2>
+              <div class="movie-grid horizontal-scroll">
+                <a v-for="movie in popularMovies.slice(0, 6)" :key="movie.id" :href="`/movie?id=${movie.id}`" class="movie-card" @click="(event) => navigateTo(`/movie?id=${movie.id}`, event)">
+                  <div class="poster-wrapper">
+                    <img :src="movie.poster_path ? `https://image.tmdb.org/t/p/w342${movie.poster_path}` : 'https://via.placeholder.com/185x278?text=No+Poster'" alt="Poster" />
+                    <div class="card-overlay"></div>
+                  </div>
+                  <p class="movie-name">{{ movie.name }}</p>
+                </a>
+              </div>
+            </section>
+          </div>
+
+        </div>
       </main>
 
     </div>
@@ -308,6 +365,26 @@ onMounted(async () => {
   gap: 48px;
 }
 
+.dashboard-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 48px;
+}
+
+/* Layout Berdampingan untuk TV dan Movie */
+.dual-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+}
+
+@media (max-width: 900px) {
+  .dual-row {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+}
+
 .main-section {
   display: flex;
   flex-direction: column;
@@ -345,12 +422,17 @@ onMounted(async () => {
 ===================== */
 .movie-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 16px;
+}
+
+/* Mengurangi item per baris di layout berdampingan supaya tidak sesak */
+.horizontal-scroll {
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
 }
 
 @media (max-width: 480px) {
-  .movie-grid {
+  .movie-grid, .horizontal-scroll {
     grid-template-columns: repeat(2, 1fr);
     gap: 14px;
   }
@@ -365,7 +447,6 @@ onMounted(async () => {
   text-decoration: none;
   color: inherit;
   cursor: pointer;
-  group: hover;
 }
 
 .poster-wrapper {
@@ -395,6 +476,21 @@ onMounted(async () => {
   transition: opacity 0.3s ease;
 }
 
+/* Type tag untuk hasil pencarian */
+.type-tag {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  z-index: 2;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+.type-tag.tv { background-color: #3b82f6; color: white; }
+.type-tag.movie { background-color: #10b981; color: white; }
+
 /* CARD INTERACTIONS EFFECT */
 .movie-card:hover .poster-wrapper {
   transform: translateY(-6px);
@@ -416,7 +512,7 @@ onMounted(async () => {
 
 /* TEXT NAME STYLE */
 .movie-name {
-  font-size: 0.88rem;
+  font-size: 0.85rem;
   font-weight: 500;
   color: #cbd5e1;
   margin: 10px 0 0 0;
