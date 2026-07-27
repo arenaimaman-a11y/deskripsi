@@ -8,7 +8,7 @@ import { ref, computed, watch, onMounted } from 'vue'
 const route = useRoute()
 const router = useRouter()
 const config = useRuntimeConfig()
-const tvId = route.query.id
+const tvId = route.query.id || '60989' // Default fallback ID
 
 /* =====================
    STATE
@@ -23,15 +23,7 @@ const selectedEpisode = ref(null)
 
 const youtubeTitle = ref('')
 const youtubeDescription = ref('')
-
-/* =====================
-   POSTER
-===================== */
-const poster = computed(() =>
-  tv.value?.poster_path
-    ? 'https://image.tmdb.org/t/p/original' + tv.value.poster_path
-    : 'https://via.placeholder.com/150x210?text=No+Image'
-)
+const isGeneratingGemini = ref(false)
 
 /* =====================
    FETCH TV DETAIL
@@ -52,7 +44,7 @@ if (tvId) {
 }
 
 /* =====================
-   FETCH IMAGES (FIXED)
+   FETCH IMAGES & FORMAT
 ===================== */
 function formatFullDate(date) {
   if (!date) return ''
@@ -62,6 +54,7 @@ function formatFullDate(date) {
     year: 'numeric'
   })
 }
+
 if (tvId) {
   const images = await $fetch(
     `https://api.themoviedb.org/3/tv/${tvId}/images`,
@@ -71,9 +64,7 @@ if (tvId) {
   )
 
   landscapeImages.value = (images.backdrops || []).map(img => {
-    const original =
-      'https://image.tmdb.org/t/p/original' + img.file_path
-
+    const original = 'https://image.tmdb.org/t/p/original' + img.file_path
     return (
       'https://wsrv.nl/?url=' +
       encodeURIComponent(original) +
@@ -113,7 +104,7 @@ onMounted(() => {
 })
 
 /* =====================
-   LOAD SEASON DATA & AUTO-SELECT EPISODE
+   LOAD SEASON DATA
 ===================== */
 watch(selectedSeason, async (s) => {
   if (!s) return
@@ -153,7 +144,7 @@ watch(selectedSeason, () => {
 })
 
 /* =====================
-   EPISODE DATA
+   EPISODE DATA & LINKS
 ===================== */
 const episodeData = computed(() => {
   if (!seasonData.value) return null
@@ -162,72 +153,6 @@ const episodeData = computed(() => {
   )
 })
 
-/* =====================
-   SEO TITLE
-===================== */
-const ytSuffixes = [
-  'Full Episode (HD)',
-  'Full Episodes',
-  'Stream HD',
-  'Watch Online'
-]
-
-function randomYoutubeTitle() {
-  if (!tv.value || !episodeData.value) return
-
-  const suffix =
-    ytSuffixes[Math.floor(Math.random() * ytSuffixes.length)]
-
-  youtubeTitle.value =
-    `${tv.value.name} Season ${selectedSeason.value} ` +
-    `Episode ${selectedEpisode.value} ${suffix}`
-}
-
-/* =====================
-   DESCRIPTION
-===================== */
-function randomYoutubeDescription() {
-  if (!tv.value || !episodeData.value) return
-
-  const name = tv.value.name
-  const s = selectedSeason.value
-  const e = selectedEpisode.value
-
-  youtubeDescription.value = `
-Watch ${name} Season ${s} Episode ${e} Full HD
-
-${name} S${s}E${e} Review
-${name} Episode ${e} Highlights
-${name} Season ${s} Breakdown
-
-Thanks for watching!
-
-#${name.replace(/\s+/g, '').toLowerCase()}
-#s${s}e${e}
-`.trim()
-}
-
-/* =====================
-   AUTO GENERATE
-===================== */
-watch(episodeData, (v) => {
-  if (v) {
-    randomYoutubeTitle()
-    randomYoutubeDescription()
-  }
-})
-
-/* =====================
-   COPY
-===================== */
-function copy(text) {
-  if (!text) return
-  navigator.clipboard.writeText(text)
-}
-
-/* =====================
-   LINK
-===================== */
 const slug = computed(() =>
   tv.value
     ? tv.value.name
@@ -237,18 +162,86 @@ const slug = computed(() =>
     : ''
 )
 
-const episodeLink = computed(() => {
+/* =====================
+   EPISODE DATA & LINKS
+===================== */
+// Generasi Shortlink dengan format: https://justplay-tv.online/tv/{tvId}/{slug}-{season}-{episode}
+/* =====================
+   SHORTLINK NATIVE (AMAN & DIRECT TO YOUTUBE)
+===================== */
+/* =====================
+   SHORTLINK FORMAT (http://www.justplay-tv.online/tv/60625/rick-and-morty-9-10)
+===================== */
+const shortlinkUrl = computed(() => {
   if (!tv.value || !selectedSeason.value || !selectedEpisode.value) return ''
-  return `https://us.justplay-tv.online/tv/${tvId}/${slug.value}-${selectedSeason.value}-${selectedEpisode.value}`
-})
 
-const episodeLinkOriginal = computed(() => {
-  if (!tv.value || !selectedSeason.value || !selectedEpisode.value) return ''
-  return `https://justplay-tv.online/tv/${tvId}/${slug.value}-${selectedSeason.value}-${selectedEpisode.value}`
+  const id = tvId || (tv.value && tv.value.id) || ''
+  
+  // Membuat slug nama film/series (misal: "Rick and Morty" -> "rick-and-morty")
+  const formattedSlug = tv.value.name
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '') // Hapus karakter khusus
+    .trim()
+    .replace(/\s+/g, '-')        // Ubah spasi jadi dash (-)
+
+  const season = selectedSeason.value
+  const episode = selectedEpisode.value
+
+  // Output: http://www.justplay-tv.online/tv/60625/rick-and-morty-9-10
+  return `https://justplay-tv.online/tv/${id}/${formattedSlug}-${season}-${episode}`
 })
 
 /* =====================
-   CSV EXPORT
+   GENERATE GEMINI AI (ENGLISH & RANDOM)
+===================== */
+async function generateWithGemini() {
+  if (!tv.value || !episodeData.value) return
+  isGeneratingGemini.value = true
+
+  try {
+    const response = await $fetch('/api/gemini-generate', {
+      method: 'POST',
+      body: {
+        showName: tv.value.name,
+        season: selectedSeason.value,
+        episode: selectedEpisode.value,
+        overview: episodeData.value.overview || tv.value.overview
+      }
+    })
+
+    if (response.success) {
+      youtubeTitle.value = response.data.title
+      youtubeDescription.value = response.data.description
+    }
+  } catch (err) {
+    console.error("Gemini Generation Error:", err)
+    
+    // Fallback English Templates (No Links)
+    const name = tv.value.name
+    const s = selectedSeason.value
+    const e = selectedEpisode.value
+    
+    const fallbackTemplates = [
+      `Watch ${name} Season ${s} Episode ${e} Full HD.\n\n${episodeData.value?.overview || ''}\n\n🔴 FULL EPISODE LINK IS PINNED IN THE TOP COMMENT BELOW! 👇\n\n#${name.replace(/\s+/g, '')} #s${s}e${e} #tvseries`,
+      `Full breakdown and review for ${name} S${s}E${e}.\n\nCatch all the exciting moments and plot twists in this latest episode.\n\n📌 Streaming Link is AVAILABLE IN THE PINNED COMMENT! 👇\n\n#${name.replace(/\s+/g, '')} #episoderecap #fullhd`
+    ]
+    
+    youtubeTitle.value = `${name} Season ${s} Episode ${e} [F.u.l.l E.p.i.s.o.d.e]`
+    youtubeDescription.value = fallbackTemplates[Math.floor(Math.random() * fallbackTemplates.length)]
+  } finally {
+    isGeneratingGemini.value = false
+  }
+}
+
+// Auto-trigger Gemini when episode changes
+watch(episodeData, (v) => {
+  if (v) {
+    generateWithGemini()
+  }
+})
+
+/* =====================
+   CSV EXPORT GENERATOR
 ===================== */
 const customCSV = computed(() => {
   if (!tv.value || !episodeData.value) return ''
@@ -256,64 +249,69 @@ const customCSV = computed(() => {
   const name = tv.value.name
   const s = selectedSeason.value
   const e = selectedEpisode.value
-  const id = tvId
+  const synopsis = (episodeData.value.overview || tv.value.overview || 'No overview available.').replace(/"/g, '""')
+  const safeName = name.toLowerCase().replace(/[^a-z0-9]/g, '')
+  const cleanName = name.replace(/[^a-zA-Z0-9]/g, '')
 
-  const slug = name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '')
-
+  // 1. Variasi Judul Acak
   const titleTemplates = [
-    `${name} Season ${s} Episode ${e} Full Episode`,
-    `${name} Season ${s} Episode ${e} Full Episode - (HD)`,
-    `${name} Season ${s} Episode ${e} Episodes - (HD)`,
-    `${name} Season ${s} Episode ${e} Full Episodes`,
-    `${name} Season ${s} Episode ${e} Full Episode HD`
+    `${name} Season ${s} Episode ${e} Full Episode Breakdown & Review (HD)`,
+    `Watch ${name} S${s}E${e} Full Episode Analysis [FULL HD]`,
+    `${name} Season ${s} Episode ${e} (HD) Official Recap & Story Details`,
+    `[FULL HD] ${name} S${s} E${e} Full Episode Discussion and Review`,
+    `${name} Season ${s} Episode ${e} Breakdown - Full Episode Overview (HD)`,
+    `Official Recap: ${name} Season ${s} Episode ${e} Full Episode [HD Quality]`,
+    `${name} S${s}E${e} (HD) Full Episode Storyline & Scene Analysis`,
+    `[HD] ${name} Season ${s} Episode ${e} Full Episode Details & Reaction`
   ]
 
-  const title = titleTemplates[Math.floor(Math.random() * titleTemplates.length)]
+  // 2. Variasi Paragraf Pembuka Deskripsi
+  const introTemplates = [
+    `Welcome to the full episode breakdown for ${name} Season ${s} Episode ${e}. In this latest chapter, the story takes an intriguing turn as key plot points unfold.`,
+    `Here is the complete guide and storyline summary for ${name} S${s}E${e}. Read below for full episode details and plot highlights.`,
+    `Exploring the events of ${name} Season ${s} Episode ${e}. Catch up on all the major character arcs and dramatic moments from this broadcast.`,
+    `A detailed overview of ${name} Season ${s} Episode ${e}. Discover what happens in this exciting new installment of the series.`
+  ]
 
-  const description = `Watch ${name} - Season ${s} Episode ${e} Full Episode
+  // 3. Variasi Penutup Deskripsi
+  const outroTemplates = [
+    `Stay tuned for more episode updates, season breakdowns, and deep dives into ${name}. Share your thoughts about Season ${s} Episode ${e} in the comments below!`,
+    `Make sure to subscribe for future episode recaps, show theories, and updates regarding ${name} Season ${s}.`,
+    `What was your favorite moment from ${name} S${s}E${e}? Leave a comment and join the discussion with other fans!`,
+    `For more coverage on ${name} and other trending TV series, don't forget to like and bookmark this page.`
+  ]
 
-${name} S${s}E${e} HD
-${name} S${s} E${e} Full HD
-${name} S${s}XE${e} Full Episode
-${name} S${s} X E${e} Full Episode HD
-${name} Season ${s} Episode ${e} HD
-${name} Season ${s} Episode ${e} Full HD
-${name} Season ${s} Episode ${e} Full Episode
+  // Pilih kalimat acak setiap kali CSV dipanggil
+  const randomTitle = titleTemplates[Math.floor(Math.random() * titleTemplates.length)]
+  const randomIntro = introTemplates[Math.floor(Math.random() * introTemplates.length)]
+  const randomOutro = outroTemplates[Math.floor(Math.random() * outroTemplates.length)]
 
-This video contains commentary, reactions, analysis, and discussion about ${name} Season ${s} Episode ${e}.
+  // Gabungkan Deskripsi Lengkap
+  const fullDescription = `${randomIntro}\n\nEpisode Overview:\n${synopsis}\n\n${randomOutro}\n\n#${cleanName} #${cleanName}Season${s} #s${s}e${e} #tvseries #episoderecap`
 
-I hope you enjoy watching the series ${name} Season ${s} Episode ${e} on My Channel.
-Subscribe to my channel and get notifications for the latest Episodes.
-Thanks for visiting & watching.
+  // Format path thumbnail lokal
+  const season = selectedSeason.value
+  const episode = selectedEpisode.value
 
-#${name.replace(/\s+/g, '').toLowerCase()}
-#${name.replace(/\s+/g, '').toLowerCase()}season${s}
-#${name.replace(/\s+/g, '').toLowerCase()}episode${e}
-#${name.replace(/\s+/g, '').toLowerCase()}s${s}e${e}
-#tvseries #episodereview #seriesrecap #showbreakdown`.trim()
-
-  const safeName = name.toLowerCase().replace(/[^a-z0-9]/g, '')
-
-  const thumbs = Array.from({ length: 5 }, (_, i) =>
-    `C:\\Users\\Administrator\\Desktop\\thumb\\${safeName}_${i + 1}.jpg`
+  const thumbs = Array.from({ length: 5 }, (_, i) => 
+    `C:\\Users\\Administrator\\Desktop\\thumb\\${safeName}_s${season}e${episode}_${i + 1}.jpg`
   )
 
-  const link = `${name} S${s} E${e}: https://justplay-tv.online/tv/${id}/${slug}-${s}-${e}`
+  // --- PERUBAHAN DI SINI ---
+  // Membuat teks komentar gabungan Judul + Link
+  const commentText = `Watch ${name} S${s} E${e} Full Ep: ${shortlinkUrl.value}`
 
+  // Output CSV murni
   return [
-    title,
-    `"${description}"`,
+    `"${randomTitle.replace(/"/g, '""')}"`,
+    `"${fullDescription.replace(/"/g, '""')}"`,
     ...thumbs,
-    `"${link}"`
+    `"${commentText.replace(/"/g, '""')}"` // <-- Menggunakan commentText yang berisi Judul + Link
   ].join(',')
 })
 
 /* =====================
-   DOWNLOAD IMAGE (WITH EDITS)
+   DOWNLOAD IMAGE WITH CANVAS & WATERMARK
 ===================== */
 function downloadImage(index) {
   if (!landscapeImages.value.length) return
@@ -330,16 +328,12 @@ function downloadImage(index) {
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    // 1. Tambahkan Filter Kontras & Saturasi agar warna tidak flat
+    // 1. Filter Kontras & Saturasi
     ctx.filter = 'contrast(1.12) saturate(1.15)'
-
-    // 2. Gambar frame dasar dari TMDB
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
-    
-    // Reset filter supaya efek berikutnya tidak bentrok
     ctx.filter = 'none'
 
-    // 3. Efek Vignette Gelap di setiap sudut layar (Cinematic Look)
+    // 2. Efek Vignette Gelap
     const vignette = ctx.createRadialGradient(
       canvas.width / 2, canvas.height / 2, canvas.width * 0.3,
       canvas.width / 2, canvas.height / 2, canvas.width * 0.75
@@ -349,26 +343,37 @@ function downloadImage(index) {
     ctx.fillStyle = vignette
     ctx.fillRect(0, 0, canvas.width, canvas.height)
 
-    // 4. Tambahkan Border Garis Dalam Tipis Premium
+    // 3. Overlay Gelap Bawah
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.55)'
+    ctx.fillRect(0, 480, 1280, 240)
+
+    // 4. WATERMARK TEXT "FULL EPISODE X"
+    const overlayText = `FULL EPISODE ${selectedEpisode.value}`
+    ctx.font = 'bold 85px Arial, sans-serif'
+    ctx.textAlign = 'center'
+    
+    // Outline Hitam Tegas
+    ctx.strokeStyle = '#000000'
+    ctx.lineWidth = 14
+    ctx.strokeText(overlayText, 640, 610)
+    
+    // Warna Kuning
+    ctx.fillStyle = '#FFD700'
+    ctx.fillText(overlayText, 640, 610)
+
+    // 5. Border Tipis Premium
     ctx.lineWidth = 4
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)'
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)'
     ctx.strokeRect(2, 2, canvas.width - 4, canvas.height - 4)
 
-    // Simpan Blob & Eksekusi Unduhan otomatis
+    // Eksekusi Download
     canvas.toBlob(blob => {
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
-
       a.href = url
-      const baseName = tv.value.name
-        .toLowerCase()
-        .replace(/[^a-z0-9]/g, '')
-
-      const filename = `${baseName}_${index + 1}.jpg`
-
-      a.download = filename
+      const baseName = tv.value.name.toLowerCase().replace(/[^a-z0-9]/g, '')
+      a.download = `${baseName}_s${selectedSeason.value}e${selectedEpisode.value}_${index + 1}.jpg`
       a.click()
-
       URL.revokeObjectURL(url)
     }, 'image/jpeg', 0.92)
   }
@@ -379,15 +384,21 @@ function downloadAllImages() {
     setTimeout(() => downloadImage(i), i * 300)
   }
 }
+
+function copy(text) {
+  if (!text) return
+  navigator.clipboard.writeText(text)
+}
 </script>
 
 <template>
   <div v-if="tv" class="page">
     <div class="container">
       
+      <!-- HEADER -->
       <header class="header">
         <div>
-          <span class="badge">Studio Mode</span>
+          <span class="badge">Studio Mode + Gemini AI (English)</span>
           <h1 class="title">{{ tv.name }}</h1>
         </div>
         
@@ -414,6 +425,7 @@ function downloadAllImages() {
         </div>
       </header>
 
+      <!-- THUMBNAILS SECTION -->
       <section class="section">
         <div class="section-header">
           <h2 class="section-title">Generated Thumbnails</h2>
@@ -428,19 +440,26 @@ function downloadAllImages() {
             :key="i" 
             class="thumb-card"
           >
-            <img :src="img || 'https://via.placeholder.com/1280x720?text=No+Thumbnail+Available'" class="poster" alt="Thumbnail Preview" />
+            <img :src="img || 'https://via.placeholder.com/1280x720?text=No+Thumbnail'" class="poster" alt="Thumbnail Preview" />
             <span class="thumb-index">#{{ i + 1 }}</span>
+            <div class="watermark-preview">FULL EPISODE {{ selectedEpisode }}</div>
           </div>
         </div>
       </section>
 
+      <!-- YOUTUBE METADATA SECTION -->
       <section class="section">
-        <h2 class="section-title">YouTube Metadata</h2>
+        <div class="section-header">
+          <h2 class="section-title">YouTube Metadata (AI Generated)</h2>
+          <button class="btn btn-secondary" @click="generateWithGemini" :disabled="isGeneratingGemini">
+            {{ isGeneratingGemini ? 'Generating AI...' : 'Re-generate Random AI' }}
+          </button>
+        </div>
         
         <div class="grid-inputs">
           <div class="input-card">
             <div class="input-header">
-              <label>Video Title</label>
+              <label>Video Title (Bypass Safe)</label>
               <button class="btn-copy" @click="copy(youtubeTitle)">Copy</button>
             </div>
             <input type="text" :value="youtubeTitle" readonly class="styled-input" />
@@ -448,16 +467,16 @@ function downloadAllImages() {
 
           <div class="input-card">
             <div class="input-header">
-              <label>Target URL</label>
-              <button class="btn-copy" @click="copy(episodeLink)">Copy</button>
+              <label>Target Shortlink (For Pinned Comment)</label>
+              <button class="btn-copy" @click="copy(shortlinkUrl)">Copy Link</button>
             </div>
-            <input type="text" :value="episodeLink" readonly class="styled-input link-style" />
+            <input type="text" :value="shortlinkUrl" readonly class="styled-input link-style" />
           </div>
         </div>
 
         <div class="input-card huge-box">
           <div class="input-header">
-            <label>Video Description</label>
+            <label>Video Description (English - No Links)</label>
             <button class="btn-copy" @click="copy(youtubeDescription)">Copy Description</button>
           </div>
           <textarea :value="youtubeDescription" readonly class="styled-textarea"></textarea>
@@ -477,10 +496,7 @@ function downloadAllImages() {
 </template>
 
 <style scoped>
-/* =====================
-   GLOBAL RESET & THEME 
-===================== */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=JetBrains+Mono:wght@400;500&display=swap');
 
 .page {
   font-family: 'Inter', sans-serif;
@@ -499,9 +515,6 @@ function downloadAllImages() {
   gap: 32px;
 }
 
-/* =====================
-   HEADER WORKSPACE
-===================== */
 .header {
   display: flex;
   justify-content: space-between;
@@ -572,9 +585,6 @@ function downloadAllImages() {
   pointer-events: none;
 }
 
-/* =====================
-   SECTIONS & INTERFACES
-===================== */
 .section {
   display: flex;
   flex-direction: column;
@@ -595,9 +605,6 @@ function downloadAllImages() {
   letter-spacing: 0.02em;
 }
 
-/* =====================
-   THUMBNAILS GRID
-===================== */
 .thumb-grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
@@ -625,6 +632,7 @@ function downloadAllImages() {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  display: block;
   transition: transform 0.3s ease;
 }
 
@@ -634,7 +642,7 @@ function downloadAllImages() {
 
 .thumb-index {
   position: absolute;
-  bottom: 8px;
+  top: 8px;
   left: 8px;
   background: rgba(0, 0, 0, 0.75);
   backdrop-filter: blur(4px);
@@ -644,11 +652,25 @@ function downloadAllImages() {
   padding: 2px 6px;
   border-radius: 4px;
   border: 1px solid rgba(255, 255, 255, 0.1);
+  z-index: 2;
 }
 
-/* =====================
-   INPUTS & CONTAINERS
-===================== */
+.watermark-preview {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 900;
+  color: #FFD700;
+  text-shadow: 1px 1px 3px #000;
+  background: rgba(0, 0, 0, 0.65);
+  padding: 4px 0;
+  z-index: 2;
+  letter-spacing: 0.05em;
+}
+
 .grid-inputs {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -722,9 +744,6 @@ function downloadAllImages() {
   color: #34d399;
 }
 
-/* =====================
-   BUTTONS INTERACTIVE
-===================== */
 .btn {
   font-family: inherit;
   font-weight: 600;
@@ -747,8 +766,13 @@ function downloadAllImages() {
   transform: translateY(-1px);
 }
 
-.btn-primary:active {
-  transform: translateY(0);
+.btn-secondary {
+  background: #374151;
+  color: #ffffff;
+}
+
+.btn-secondary:hover {
+  background: #4b5563;
 }
 
 .btn-copy {
@@ -767,9 +791,5 @@ function downloadAllImages() {
   background: #374151;
   color: #ffffff;
   border-color: #4b5563;
-}
-
-.btn-copy:active {
-  background: #111827;
 }
 </style>
