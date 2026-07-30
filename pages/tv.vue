@@ -253,16 +253,11 @@ const customCSV = computed(() => {
   const safeName = name.toLowerCase().replace(/[^a-z0-9]/g, '')
   const cleanName = name.replace(/[^a-zA-Z0-9]/g, '')
 
-  // 1. Variasi Judul Acak
+// 1. Variasi Judul Acak
   const titleTemplates = [
-    `${name} Season ${s} Episode ${e} Full Episode Breakdown & Review (HD)`,
-    `Watch ${name} S${s}E${e} Full Episode Analysis [FULL HD]`,
-    `${name} Season ${s} Episode ${e} (HD) Official Recap & Story Details`,
-    `[FULL HD] ${name} S${s} E${e} Full Episode Discussion and Review`,
-    `${name} Season ${s} Episode ${e} Breakdown - Full Episode Overview (HD)`,
-    `Official Recap: ${name} Season ${s} Episode ${e} Full Episode [HD Quality]`,
-    `${name} S${s}E${e} (HD) Full Episode Storyline & Scene Analysis`,
-    `[HD] ${name} Season ${s} Episode ${e} Full Episode Details & Reaction`
+    `${name} Season ${s} Episode ${e} Full HD`,
+    `${name} Season ${s} Episode ${e} Full Episode`,
+    `${name} Season ${s} Episode ${e} Full Episode - (HD)`
   ]
 
   // 2. Variasi Paragraf Pembuka Deskripsi
