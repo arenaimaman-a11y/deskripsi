@@ -165,7 +165,7 @@ const slug = computed(() =>
 /* =====================
    EPISODE DATA & LINKS
 ===================== */
-// Generasi Shortlink dengan format: https://justplay-tv.online/tv/{tvId}/{slug}-{season}-{episode}
+// Generasi Shortlink dengan format: https://usflix.online/tv/{tvId}/{slug}-{season}-{episode}
 /* =====================
    SHORTLINK NATIVE (AMAN & DIRECT TO YOUTUBE)
 ===================== */
@@ -188,7 +188,7 @@ const shortlinkUrl = computed(() => {
   const episode = selectedEpisode.value
 
   // Output: http://www.justplay-tv.online/tv/60625/rick-and-morty-9-10
-  return `https://justplay-tv.online/tv/${id}/${formattedSlug}-${season}-${episode}`
+  return `https://usflix.online/tv/${id}/${formattedSlug}-${season}-${episode}`
 })
 
 /* =====================
@@ -241,7 +241,7 @@ watch(episodeData, (v) => {
 })
 
 /* =====================
-   CSV EXPORT GENERATOR (CUSTOM DESCRIPTION)
+   CSV EXPORT GENERATOR
 ===================== */
 const customCSV = computed(() => {
   if (!tv.value || !episodeData.value) return ''
@@ -249,49 +249,59 @@ const customCSV = computed(() => {
   const name = tv.value.name
   const s = selectedSeason.value
   const e = selectedEpisode.value
+  const synopsis = (episodeData.value.overview || tv.value.overview || 'No overview available.').replace(/"/g, '""')
   const safeName = name.toLowerCase().replace(/[^a-z0-9]/g, '')
   const cleanName = name.replace(/[^a-zA-Z0-9]/g, '')
 
-  // 1. Judul Video
-  const title = `${name} Season ${s} Episode ${e} Full Episode`
+// 1. Variasi Judul Acak
+  const titleTemplates = [
+    `${name} Season ${s} Episode ${e} Full HD`,
+    `${name} Season ${s} Episode ${e} Full Episode`,
+    `${name} Season ${s} Episode ${e} Full Episode - (HD)`
+  ]
 
-  // 2. Deskripsi Khusus Sesuai Format Request
-  const fullDescription = `Watch ${name} - Season ${s} Episode ${e} Full Episode
+  // 2. Variasi Paragraf Pembuka Deskripsi
+  const introTemplates = [
+    `Welcome to the full episode breakdown for ${name} Season ${s} Episode ${e}. In this latest chapter, the story takes an intriguing turn as key plot points unfold.`,
+    `Here is the complete guide and storyline summary for ${name} S${s}E${e}. Read below for full episode details and plot highlights.`,
+    `Exploring the events of ${name} Season ${s} Episode ${e}. Catch up on all the major character arcs and dramatic moments from this broadcast.`,
+    `A detailed overview of ${name} Season ${s} Episode ${e}. Discover what happens in this exciting new installment of the series.`
+  ]
 
-${name} S${s}E${e} HD
-${name} S${s} E${e} Full HD
-${name} S${s}XE${e} Full Episode
-${name} S${s} X E${e} Full Episode HD
-${name} Season ${s} Episode ${e} HD
-${name} Season ${s} Episode ${e} Full HD
-${name} Season ${s} Episode ${e} Full Episode
+  // 3. Variasi Penutup Deskripsi
+  const outroTemplates = [
+    `Stay tuned for more episode updates, season breakdowns, and deep dives into ${name}. Share your thoughts about Season ${s} Episode ${e} in the comments below!`,
+    `Make sure to subscribe for future episode recaps, show theories, and updates regarding ${name} Season ${s}.`,
+    `What was your favorite moment from ${name} S${s}E${e}? Leave a comment and join the discussion with other fans!`,
+    `For more coverage on ${name} and other trending TV series, don't forget to like and bookmark this page.`
+  ]
 
-This video contains commentary, reactions, analysis, and discussion about ${name} Season ${s} Episode ${e}.
+  // Pilih kalimat acak setiap kali CSV dipanggil
+  const randomTitle = titleTemplates[Math.floor(Math.random() * titleTemplates.length)]
+  const randomIntro = introTemplates[Math.floor(Math.random() * introTemplates.length)]
+  const randomOutro = outroTemplates[Math.floor(Math.random() * outroTemplates.length)]
 
-I hope you enjoy watching the series ${name} Season ${s} Episode ${e} on My Channel.
-Subscribe to my channel and get notifications for the latest Episodes.
-Thanks for visiting & watching.
+  // Gabungkan Deskripsi Lengkap
+  const fullDescription = `${randomIntro}\n\nEpisode Overview:\n${synopsis}\n\n${randomOutro}\n\n#${cleanName} #${cleanName}Season${s} #s${s}e${e} #tvseries #episoderecap`
 
-#${cleanName.toLowerCase()}
-#${cleanName.toLowerCase()}season${s}
-#${cleanName.toLowerCase()}episode${e}
-#${cleanName.toLowerCase()}s${s}e${e}
-#tvseries #episoderecap`
+  // Format path thumbnail lokal
+  const season = selectedSeason.value
+  const episode = selectedEpisode.value
 
-  // 3. Format path thumbnail lokal
   const thumbs = Array.from({ length: 5 }, (_, i) => 
-    `C:\\Users\\Administrator\\Desktop\\thumb\\${safeName}_s${s}e${e}_${i + 1}.jpg`
+    `C:\\Users\\Administrator\\Desktop\\thumb\\${safeName}_s${season}e${episode}_${i + 1}.jpg`
   )
 
-  // 4. Komentar berisi Link Target
+  // --- PERUBAHAN DI SINI ---
+  // Membuat teks komentar gabungan Judul + Link
   const commentText = `Watch ${name} S${s} E${e} Full Ep: ${shortlinkUrl.value}`
 
   // Output CSV murni
   return [
-    `"${title.replace(/"/g, '""')}"`,
+    `"${randomTitle.replace(/"/g, '""')}"`,
     `"${fullDescription.replace(/"/g, '""')}"`,
     ...thumbs,
-    `"${commentText.replace(/"/g, '""')}"`
+    `"${commentText.replace(/"/g, '""')}"` // <-- Menggunakan commentText yang berisi Judul + Link
   ].join(',')
 })
 
