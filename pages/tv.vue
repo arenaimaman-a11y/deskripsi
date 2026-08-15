@@ -163,32 +163,25 @@ const slug = computed(() =>
 )
 
 /* =====================
-   EPISODE DATA & LINKS
-===================== */
-// Generasi Shortlink dengan format: https://usflix.online/tv/{tvId}/{slug}-{season}-{episode}
-/* =====================
-   SHORTLINK NATIVE (AMAN & DIRECT TO YOUTUBE)
-===================== */
-/* =====================
-   SHORTLINK FORMAT (http://www.justplay-tv.online/tv/60625/rick-and-morty-9-10)
+   SHORTLINK FORMAT (https://www.justplay-tv.online/tv/{id}-{slug}/season-{season}/episode-{episode})
 ===================== */
 const shortlinkUrl = computed(() => {
   if (!tv.value || !selectedSeason.value || !selectedEpisode.value) return ''
 
   const id = tvId || (tv.value && tv.value.id) || ''
   
-  // Membuat slug nama film/series (misal: "Rick and Morty" -> "rick-and-morty")
+  // Format slug nama TV show (misal: "House of the Dragon" -> "house-of-the-dragon")
   const formattedSlug = tv.value.name
     .toLowerCase()
     .replace(/[^a-z0-9\s-]/g, '') // Hapus karakter khusus
     .trim()
-    .replace(/\s+/g, '-')        // Ubah spasi jadi dash (-)
+    .replace(/\s+/g, '-')         // Ubah spasi menjadi dash (-)
 
   const season = selectedSeason.value
   const episode = selectedEpisode.value
 
-  // Output: http://www.justplay-tv.online/tv/60625/rick-and-morty-9-10
-  return `https://usflix.online/tv/${id}/${formattedSlug}-${season}-${episode}`
+  // Output: https://www.justplay-tv.online/tv/94997-house-of-the-dragon/season-1/episode-1
+  return `https://www.justplay-tv.online/tv/${id}-${formattedSlug}/season-${season}/episode-${episode}`
 })
 
 /* =====================
