@@ -231,6 +231,7 @@ const customCSV = computed(() => {
   const s = selectedSeason.value
   const e = selectedEpisode.value
   const safeName = name.toLowerCase().replace(/[^a-z0-9]/g, '')
+  const cleanName = name.replace(/[^a-zA-Z0-9]/g, '')
 
   const titleTemplates = [
     `${name} Season ${s} Episode ${e} Full HD`,
@@ -240,13 +241,11 @@ const customCSV = computed(() => {
 
   const randomTitle = titleTemplates[Math.floor(Math.random() * titleTemplates.length)]
 
-  const fullDescription = `Watch Silo - Season 3 Episode 7 Full Episode\n\nSilo S3E7 HD\nSilo S3 E7 Full HD\nSilo S3XE7 Full Episode\nSilo S3 X E7 Full Episode HD\nSilo Season 3 Episode 7 HD\nSilo Season 3 Episode 7 Full HD\nSilo Season 3 Episode 7 Full Episode\n\nThis video contains commentary, reactions, analysis, and discussion about Silo Season 3 Episode 7.\n\nI hope you enjoy watching the series Silo Season 3 Episode 7 on My Channel.\nSubscribe to my channel and get notifications for the latest Episodes.\nThanks for visiting & watching.\n\n#silo\n#siloseason3\n#siloepisode7\n#silos3e7\n#tvseries #episodereview #seriesrecap #showbreakdown`
-
-  const season = selectedSeason.value
-  const episode = selectedEpisode.value
+  // Deskripsi dinamis mengikuti variabel name, s, dan e
+  const fullDescription = `Watch ${name} - Season ${s} Episode ${e} Full Episode\n\n${name} S${s}E${e} HD\n${name} S${s} E${e} Full HD\n${name} S${s}XE${e} Full Episode\n${name} S${s} X E${e} Full Episode HD\n${name} Season ${s} Episode ${e} HD\n${name} Season ${s} Episode ${e} Full HD\n${name} Season ${s} Episode ${e} Full Episode\n\nThis video contains commentary, reactions, analysis, and discussion about ${name} Season ${s} Episode ${e}.\n\nI hope you enjoy watching the series ${name} Season ${s} Episode ${e} on My Channel.\nSubscribe to my channel and get notifications for the latest Episodes.\nThanks for visiting & watching.\n\n#${cleanName.toLowerCase()}\n#${cleanName.toLowerCase()}season${s}\n#${cleanName.toLowerCase()}episode${e}\n#${cleanName.toLowerCase()}s${s}e${e}\n#tvseries #episodereview #seriesrecap #showbreakdown`
 
   const thumbs = Array.from({ length: 5 }, (_, i) => 
-    `C:\\Users\\Administrator\\Desktop\\thumb\\${safeName}_s${season}e${episode}_${i + 1}.jpg`
+    `C:\\Users\\Administrator\\Desktop\\thumb\\${safeName}_s${s}e${e}_${i + 1}.jpg`
   )
 
   const commentText = `Watch ${name} S${s} E${e} Full Ep: ${shortlinkUrl.value}`
@@ -617,32 +616,33 @@ function copy(text) {
   left: 0;
   right: 0;
   text-align: center;
-  background: rgba(0, 0, 0, 0.7);
-  padding: 6px 4px;
+  background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0, 0, 0, 0.85) 100%);
+  padding: 12px 6px 6px 6px;
   z-index: 2;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  line-height: 1.1;
+  gap: 2px;
 }
 
 .wm-title {
-  font-size: 1.1rem;
-  font-weight: 900;
-  color: #FFD700;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #FFFFFF;
   text-transform: uppercase;
-  text-shadow: 2px 2px 0px #000, -1px -1px 0px #000, 1px -1px 0px #000, -1px 1px 0px #000;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
+  filter: drop-shadow(0px 2px 4px rgba(0, 0, 0, 0.9));
+  line-height: 1.1;
 }
 
 .wm-ep {
-  font-size: 0.95rem;
+  font-size: 0.75rem;
   font-weight: 900;
   color: #FFD700;
   text-transform: uppercase;
-  text-shadow: 2px 2px 0px #000, -1px -1px 0px #000, 1px -1px 0px #000, -1px 1px 0px #000;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
+  filter: drop-shadow(0px 2px 3px rgba(0, 0, 0, 0.9));
 }
 
 .grid-inputs {
