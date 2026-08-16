@@ -163,24 +163,22 @@ const slug = computed(() =>
 )
 
 /* =====================
-   SHORTLINK FORMAT (https://www.justplay-tv.online/tv/{id}-{slug}/season-{season}/episode-{episode})
+   SHORTLINK FORMAT
 ===================== */
 const shortlinkUrl = computed(() => {
   if (!tv.value || !selectedSeason.value || !selectedEpisode.value) return ''
 
   const id = tvId || (tv.value && tv.value.id) || ''
   
-  // Format slug nama TV show (misal: "House of the Dragon" -> "house-of-the-dragon")
   const formattedSlug = tv.value.name
     .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, '') // Hapus karakter khusus
+    .replace(/[^a-z0-9\s-]/g, '')
     .trim()
-    .replace(/\s+/g, '-')         // Ubah spasi menjadi dash (-)
+    .replace(/\s+/g, '-')
 
   const season = selectedSeason.value
   const episode = selectedEpisode.value
 
-  // Output: https://www.justplay-tv.online/tv/94997-house-of-the-dragon/season-1/episode-1
   return `https://www.justplay-tv.online/tv/${id}-${formattedSlug}/season-${season}/episode-${episode}`
 })
 
@@ -209,18 +207,8 @@ async function generateWithGemini() {
   } catch (err) {
     console.error("Gemini Generation Error:", err)
     
-    // Fallback English Templates (No Links)
-    const name = tv.value.name
-    const s = selectedSeason.value
-    const e = selectedEpisode.value
-    
-    const fallbackTemplates = [
-      `Watch ${name} Season ${s} Episode ${e} Full HD.\n\n${episodeData.value?.overview || ''}\n\n🔴 FULL EPISODE LINK IS PINNED IN THE TOP COMMENT BELOW! 👇\n\n#${name.replace(/\s+/g, '')} #s${s}e${e} #tvseries`,
-      `Full breakdown and review for ${name} S${s}E${e}.\n\nCatch all the exciting moments and plot twists in this latest episode.\n\n📌 Streaming Link is AVAILABLE IN THE PINNED COMMENT! 👇\n\n#${name.replace(/\s+/g, '')} #episoderecap #fullhd`
-    ]
-    
-    youtubeTitle.value = `${name} Season ${s} Episode ${e} [F.u.l.l E.p.i.s.o.d.e]`
-    youtubeDescription.value = fallbackTemplates[Math.floor(Math.random() * fallbackTemplates.length)]
+    youtubeTitle.value = `${tv.value.name} Season ${selectedSeason.value} Episode ${selectedEpisode.value} [F.u.l.l E.p.i.s.o.d.e]`
+    youtubeDescription.value = `Watch Silo - Season 3 Episode 7 Full Episode\n\nSilo S3E7 HD\nSilo S3 E7 Full HD\nSilo S3XE7 Full Episode\nSilo S3 X E7 Full Episode HD\nSilo Season 3 Episode 7 HD\nSilo Season 3 Episode 7 Full HD\nSilo Season 3 Episode 7 Full Episode\n\nThis video contains commentary, reactions, analysis, and discussion about Silo Season 3 Episode 7.\n\nI hope you enjoy watching the series Silo Season 3 Episode 7 on My Channel.\nSubscribe to my channel and get notifications for the latest Episodes.\nThanks for visiting & watching.\n\n#silo\n#siloseason3\n#siloepisode7\n#silos3e7\n#tvseries #episodereview #seriesrecap #showbreakdown`
   } finally {
     isGeneratingGemini.value = false
   }
@@ -242,42 +230,18 @@ const customCSV = computed(() => {
   const name = tv.value.name
   const s = selectedSeason.value
   const e = selectedEpisode.value
-  const synopsis = (episodeData.value.overview || tv.value.overview || 'No overview available.').replace(/"/g, '""')
   const safeName = name.toLowerCase().replace(/[^a-z0-9]/g, '')
-  const cleanName = name.replace(/[^a-zA-Z0-9]/g, '')
 
-// 1. Variasi Judul Acak
   const titleTemplates = [
     `${name} Season ${s} Episode ${e} Full HD`,
     `${name} Season ${s} Episode ${e} Full Episode`,
     `${name} Season ${s} Episode ${e} Full Episode - (HD)`
   ]
 
-  // 2. Variasi Paragraf Pembuka Deskripsi
-  const introTemplates = [
-    `Welcome to the full episode breakdown for ${name} Season ${s} Episode ${e}. In this latest chapter, the story takes an intriguing turn as key plot points unfold.`,
-    `Here is the complete guide and storyline summary for ${name} S${s}E${e}. Read below for full episode details and plot highlights.`,
-    `Exploring the events of ${name} Season ${s} Episode ${e}. Catch up on all the major character arcs and dramatic moments from this broadcast.`,
-    `A detailed overview of ${name} Season ${s} Episode ${e}. Discover what happens in this exciting new installment of the series.`
-  ]
-
-  // 3. Variasi Penutup Deskripsi
-  const outroTemplates = [
-    `Stay tuned for more episode updates, season breakdowns, and deep dives into ${name}. Share your thoughts about Season ${s} Episode ${e} in the comments below!`,
-    `Make sure to subscribe for future episode recaps, show theories, and updates regarding ${name} Season ${s}.`,
-    `What was your favorite moment from ${name} S${s}E${e}? Leave a comment and join the discussion with other fans!`,
-    `For more coverage on ${name} and other trending TV series, don't forget to like and bookmark this page.`
-  ]
-
-  // Pilih kalimat acak setiap kali CSV dipanggil
   const randomTitle = titleTemplates[Math.floor(Math.random() * titleTemplates.length)]
-  const randomIntro = introTemplates[Math.floor(Math.random() * introTemplates.length)]
-  const randomOutro = outroTemplates[Math.floor(Math.random() * outroTemplates.length)]
 
-  // Gabungkan Deskripsi Lengkap
-  const fullDescription = `${randomIntro}\n\nEpisode Overview:\n${synopsis}\n\n${randomOutro}\n\n#${cleanName} #${cleanName}Season${s} #s${s}e${e} #tvseries #episoderecap`
+  const fullDescription = `Watch Silo - Season 3 Episode 7 Full Episode\n\nSilo S3E7 HD\nSilo S3 E7 Full HD\nSilo S3XE7 Full Episode\nSilo S3 X E7 Full Episode HD\nSilo Season 3 Episode 7 HD\nSilo Season 3 Episode 7 Full HD\nSilo Season 3 Episode 7 Full Episode\n\nThis video contains commentary, reactions, analysis, and discussion about Silo Season 3 Episode 7.\n\nI hope you enjoy watching the series Silo Season 3 Episode 7 on My Channel.\nSubscribe to my channel and get notifications for the latest Episodes.\nThanks for visiting & watching.\n\n#silo\n#siloseason3\n#siloepisode7\n#silos3e7\n#tvseries #episodereview #seriesrecap #showbreakdown`
 
-  // Format path thumbnail lokal
   const season = selectedSeason.value
   const episode = selectedEpisode.value
 
@@ -285,16 +249,13 @@ const customCSV = computed(() => {
     `C:\\Users\\Administrator\\Desktop\\thumb\\${safeName}_s${season}e${episode}_${i + 1}.jpg`
   )
 
-  // --- PERUBAHAN DI SINI ---
-  // Membuat teks komentar gabungan Judul + Link
   const commentText = `Watch ${name} S${s} E${e} Full Ep: ${shortlinkUrl.value}`
 
-  // Output CSV murni
   return [
     `"${randomTitle.replace(/"/g, '""')}"`,
     `"${fullDescription.replace(/"/g, '""')}"`,
     ...thumbs,
-    `"${commentText.replace(/"/g, '""')}"` // <-- Menggunakan commentText yang berisi Judul + Link
+    `"${commentText.replace(/"/g, '""')}"`
   ].join(',')
 })
 
@@ -317,42 +278,46 @@ function downloadImage(index) {
     if (!ctx) return
 
     // 1. Filter Kontras & Saturasi
-    ctx.filter = 'contrast(1.12) saturate(1.15)'
+    ctx.filter = 'contrast(1.08) saturate(1.12)'
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
     ctx.filter = 'none'
 
-    // 2. Efek Vignette Gelap
-    const vignette = ctx.createRadialGradient(
-      canvas.width / 2, canvas.height / 2, canvas.width * 0.3,
-      canvas.width / 2, canvas.height / 2, canvas.width * 0.75
-    )
-    vignette.addColorStop(0, 'rgba(0, 0, 0, 0)')
-    vignette.addColorStop(1, 'rgba(0, 0, 0, 0.65)')
-    ctx.fillStyle = vignette
-    ctx.fillRect(0, 0, canvas.width, canvas.height)
+    // 2. Overlay Gradient Soft Bawah
+    const gradient = ctx.createLinearGradient(0, 420, 0, 720)
+    gradient.addColorStop(0, 'rgba(0, 0, 0, 0)')
+    gradient.addColorStop(1, 'rgba(0, 0, 0, 0.75)')
+    ctx.fillStyle = gradient
+    ctx.fillRect(0, 420, 1280, 300)
 
-    // 3. Overlay Gelap Bawah
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.55)'
-    ctx.fillRect(0, 480, 1280, 240)
+    // 3. WATERMARK TEXT "JUDUL" & "S{season}E{episode}"
+    const showNameUpper = (tv.value?.name || 'SHOW').toUpperCase()
+    const seasonEpText = `S${selectedSeason.value}E${selectedEpisode.value}`
 
-    // 4. WATERMARK TEXT "FULL EPISODE X"
-    const overlayText = `FULL EPISODE ${selectedEpisode.value}`
-    ctx.font = 'bold 85px Arial, sans-serif'
     ctx.textAlign = 'center'
     
-    // Outline Hitam Tegas
-    ctx.strokeStyle = '#000000'
-    ctx.lineWidth = 14
-    ctx.strokeText(overlayText, 640, 610)
-    
-    // Warna Kuning
-    ctx.fillStyle = '#FFD700'
-    ctx.fillText(overlayText, 640, 610)
+    // Shadow Lembut (Ganti Outlined Hitam Tebal)
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.9)'
+    ctx.shadowBlur = 12
+    ctx.shadowOffsetX = 3
+    ctx.shadowOffsetY = 4
 
-    // 5. Border Tipis Premium
-    ctx.lineWidth = 4
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)'
-    ctx.strokeRect(2, 2, canvas.width - 4, canvas.height - 4)
+    // Line 1: Judul Film/Series (Ukuran diperkecil dari 110px ke 72px)
+    ctx.font = '800 72px "Inter", "Segoe UI", sans-serif'
+    ctx.fillStyle = '#FFFFFF' // Warna putih bersih
+    ctx.fillText(showNameUpper, 640, 580)
+
+    // Line 2: S1E7 (Aksen Warna Emas, Font 56px)
+    ctx.font = '900 56px "Inter", "Segoe UI", sans-serif'
+    ctx.fillStyle = '#FFD700'
+    ctx.fillText(seasonEpText, 640, 645)
+
+    // Reset Shadow
+    ctx.shadowColor = 'transparent'
+
+    // 4. Border Tipis Elegant
+    ctx.lineWidth = 2
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)'
+    ctx.strokeRect(4, 4, canvas.width - 8, canvas.height - 8)
 
     // Eksekusi Download
     canvas.toBlob(blob => {
@@ -430,7 +395,10 @@ function copy(text) {
           >
             <img :src="img || 'https://via.placeholder.com/1280x720?text=No+Thumbnail'" class="poster" alt="Thumbnail Preview" />
             <span class="thumb-index">#{{ i + 1 }}</span>
-            <div class="watermark-preview">FULL EPISODE {{ selectedEpisode }}</div>
+            <div class="watermark-preview">
+              <div class="wm-title">{{ tv.name }}</div>
+              <div class="wm-ep">S{{ selectedSeason }}E{{ selectedEpisode }}</div>
+            </div>
           </div>
         </div>
       </section>
@@ -563,7 +531,7 @@ function copy(text) {
 }
 
 .select-wrapper::after {
-  content: "↓";
+  content: "▼";
   font-size: 0.8rem;
   color: #9ca3af;
   position: absolute;
@@ -649,14 +617,32 @@ function copy(text) {
   left: 0;
   right: 0;
   text-align: center;
-  font-size: 0.75rem;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 6px 4px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.1;
+}
+
+.wm-title {
+  font-size: 1.1rem;
   font-weight: 900;
   color: #FFD700;
-  text-shadow: 1px 1px 3px #000;
-  background: rgba(0, 0, 0, 0.65);
-  padding: 4px 0;
-  z-index: 2;
-  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  text-shadow: 2px 2px 0px #000, -1px -1px 0px #000, 1px -1px 0px #000, -1px 1px 0px #000;
+  letter-spacing: 0.04em;
+}
+
+.wm-ep {
+  font-size: 0.95rem;
+  font-weight: 900;
+  color: #FFD700;
+  text-transform: uppercase;
+  text-shadow: 2px 2px 0px #000, -1px -1px 0px #000, 1px -1px 0px #000, -1px 1px 0px #000;
+  letter-spacing: 0.04em;
 }
 
 .grid-inputs {
