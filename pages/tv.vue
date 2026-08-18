@@ -17,6 +17,7 @@ const tv = ref(null)
 const seasonList = ref([])
 const seasonData = ref(null)
 const landscapeImages = ref([])
+const trailerUrl = ref('')
 
 const selectedSeason = ref(null)
 const selectedEpisode = ref(null)
@@ -44,7 +45,7 @@ if (tvId) {
 }
 
 /* =====================
-   FETCH IMAGES & FORMAT
+   FETCH IMAGES, VIDEOS (TRAILER) & FORMAT
 ===================== */
 function formatFullDate(date) {
   if (!date) return ''
@@ -71,6 +72,22 @@ if (tvId) {
       '&format=jpg&n=-1&q=90'
     )
   })
+
+  // Fetch Trailer Link
+  const videos = await $fetch(
+    `https://api.themoviedb.org/3/tv/${tvId}/videos`,
+    {
+      query: { api_key: config.public.tmdbApiKey, language: 'en-US' }
+    }
+  )
+
+  const trailer = (videos.results || []).find(
+    v => v.site === 'YouTube' && (v.type === 'Trailer' || v.type === 'Teaser')
+  )
+
+  if (trailer) {
+    trailerUrl.value = `https://www.youtube.com/watch?v=${trailer.key}`
+  }
 }
 
 /* =====================
@@ -426,6 +443,14 @@ function copy(text) {
               <button class="btn-copy" @click="copy(shortlinkUrl)">Copy Link</button>
             </div>
             <input type="text" :value="shortlinkUrl" readonly class="styled-input link-style" />
+          </div>
+
+          <div class="input-card">
+            <div class="input-header">
+              <label>Trailer Link</label>
+              <button class="btn-copy" @click="copy(trailerUrl)">Copy Link</button>
+            </div>
+            <input type="text" :value="trailerUrl" readonly class="styled-input link-style" placeholder="No trailer available" />
           </div>
         </div>
 
