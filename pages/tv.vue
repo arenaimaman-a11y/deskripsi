@@ -180,23 +180,19 @@ const slug = computed(() =>
 )
 
 /* =====================
-   SHORTLINK FORMAT
+   URL AWAL (TANPA SHORTLINK)
 ===================== */
-const shortlinkUrl = computed(() => {
+const targetUrl = computed(() => {
   if (!tv.value || !selectedSeason.value || !selectedEpisode.value) return ''
 
-  const id = tvId || (tv.value && tv.value.id) || ''
-  
+  const id = tvId || tv.value.id || ''
   const formattedSlug = tv.value.name
     .toLowerCase()
     .replace(/[^a-z0-9\s-]/g, '')
     .trim()
     .replace(/\s+/g, '-')
 
-  const season = selectedSeason.value
-  const episode = selectedEpisode.value
-
-  return `https://www.justplay-tv.online/tv/${id}-${formattedSlug}/season-${season}/episode-${episode}`
+  return `https://www.usflix.online/tv/${id}/${formattedSlug}-${selectedSeason.value}-${selectedEpisode.value}`
 })
 
 /* =====================
@@ -258,14 +254,13 @@ const customCSV = computed(() => {
 
   const randomTitle = titleTemplates[Math.floor(Math.random() * titleTemplates.length)]
 
-  // Deskripsi dinamis mengikuti variabel name, s, dan e
   const fullDescription = `Watch ${name} - Season ${s} Episode ${e} Full Episode\n\n${name} S${s}E${e} HD\n${name} S${s} E${e} Full HD\n${name} S${s}XE${e} Full Episode\n${name} S${s} X E${e} Full Episode HD\n${name} Season ${s} Episode ${e} HD\n${name} Season ${s} Episode ${e} Full HD\n${name} Season ${s} Episode ${e} Full Episode\n\nThis video contains commentary, reactions, analysis, and discussion about ${name} Season ${s} Episode ${e}.\n\nI hope you enjoy watching the series ${name} Season ${s} Episode ${e} on My Channel.\nSubscribe to my channel and get notifications for the latest Episodes.\nThanks for visiting & watching.\n\n#${cleanName.toLowerCase()}\n#${cleanName.toLowerCase()}season${s}\n#${cleanName.toLowerCase()}episode${e}\n#${cleanName.toLowerCase()}s${s}e${e}\n#tvseries #episodereview #seriesrecap #showbreakdown`
 
   const thumbs = Array.from({ length: 5 }, (_, i) => 
     `C:\\Users\\Administrator\\Desktop\\thumb\\${safeName}_s${s}e${e}_${i + 1}.jpg`
   )
 
-  const commentText = `Watch ${name} S${s} E${e} Full Ep: ${shortlinkUrl.value}`
+  const commentText = `Watch ${name} S${s} E${e} Full Ep: ${targetUrl.value}`
 
   return [
     `"${randomTitle.replace(/"/g, '""')}"`,
@@ -311,18 +306,18 @@ function downloadImage(index) {
 
     ctx.textAlign = 'center'
     
-    // Shadow Lembut (Ganti Outlined Hitam Tebal)
+    // Shadow Lembut
     ctx.shadowColor = 'rgba(0, 0, 0, 0.9)'
     ctx.shadowBlur = 12
     ctx.shadowOffsetX = 3
     ctx.shadowOffsetY = 4
 
-    // Line 1: Judul Film/Series (Ukuran diperkecil dari 110px ke 72px)
+    // Line 1: Judul Film/Series
     ctx.font = '800 72px "Inter", "Segoe UI", sans-serif'
-    ctx.fillStyle = '#FFFFFF' // Warna putih bersih
+    ctx.fillStyle = '#FFFFFF'
     ctx.fillText(showNameUpper, 640, 580)
 
-    // Line 2: S1E7 (Aksen Warna Emas, Font 56px)
+    // Line 2: S1E7
     ctx.font = '900 56px "Inter", "Segoe UI", sans-serif'
     ctx.fillStyle = '#FFD700'
     ctx.fillText(seasonEpText, 640, 645)
@@ -439,10 +434,17 @@ function copy(text) {
 
           <div class="input-card">
             <div class="input-header">
-              <label>Target Shortlink (For Pinned Comment)</label>
-              <button class="btn-copy" @click="copy(shortlinkUrl)">Copy Link</button>
+              <label>Target Direct Link</label>
+              <button class="btn-copy" @click="copy(targetUrl)">
+                Copy Link
+              </button>
             </div>
-            <input type="text" :value="shortlinkUrl" readonly class="styled-input link-style" />
+            <input 
+              type="text" 
+              :value="targetUrl" 
+              readonly 
+              class="styled-input link-style" 
+            />
           </div>
 
           <div class="input-card">
