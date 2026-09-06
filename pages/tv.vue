@@ -192,7 +192,7 @@ const targetUrl = computed(() => {
     .trim()
     .replace(/\s+/g, '-')
 
-  return `https://www.usflix.online/tv/${id}/${formattedSlug}-${selectedSeason.value}-${selectedEpisode.value}`
+  return `https://usflix.online/tv/${id}/${formattedSlug}-${selectedSeason.value}-${selectedEpisode.value}`
 })
 
 /* =====================
